@@ -1,0 +1,15 @@
+{
+  "name": "todo-server",
+  "version": "1.0.0",
+  "description": "Server for todo-list react project",
+  "license": "ISC",
+  "author": "Omar Roselli",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev":"node --watch src/main.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
