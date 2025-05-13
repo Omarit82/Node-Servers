@@ -20,3 +20,14 @@ export const createTask = async(req,res) => {
         res.status(500).send({message:"Error connection lost", error:error})
     }
 }
+
+export const deleteTask = async(req,res) =>{
+    try {
+        const taskId = req.params.id;
+        const response = await taskModel.deleteOne({ _id: taskId });
+        res.status(200).send({message:"Task Erased", task:response})
+    } catch (error) {
+        res.status(500).send({message:"Error connection lost", error:error})
+    }
+    
+}

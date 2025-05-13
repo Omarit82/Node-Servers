@@ -10,7 +10,7 @@ dotenv.config()
 const PORT = process.env.PORT;
 
 app.use(express.json());
-app.use(cors())
+app.use(cors({ origin: 'http://localhost:5173' }))
 app.use('/',indexRouter);
 
 mongoose.connect(process.env.URL_MONGO)
