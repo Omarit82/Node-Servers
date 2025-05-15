@@ -1,6 +1,15 @@
 //getTasks,createTask,getTask,updateTask,deleteTask
 import taskModel from "../models/task.model.js"
 
+export const updateTask = async(req, res) => {
+    try {
+        const taskDone = await taskModel.findByIdAndUpdate(req.params.id,req.body);
+        res.status(204).send({message:"Task updated", task:taskDone})
+    } catch (error) {
+        res.status(500).send({message:"Error connection lost", error:error})
+    }
+}
+
 export const getTasks = async(req,res)=>{
     try {
         const tasks =  await taskModel.find();

@@ -13,6 +13,10 @@ const taskSchema = new Schema({
         type:Date,
         required:true
     },
+    date_done:{
+        type:Date,
+        required:false
+    },
     description:{
         type:String
     },
