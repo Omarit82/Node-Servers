@@ -1,0 +1,21 @@
+{
+  "name": "italiano-app",
+  "version": "1.0.0",
+  "description": "Backend app italiano",
+  "license": "ISC",
+  "author": "Omar Roselli",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node --watch src/main.js",
+    "dev": ""
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongodb": "^6.17.0",
+    "mongoose": "^8.16.0"
+  }
+}
