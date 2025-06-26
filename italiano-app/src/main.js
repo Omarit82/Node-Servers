@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import indexRouter from './Routes/index.routes.js';
 import cors from 'cors';
+import Reverso from 'reverso-api';
 
 dotenv.config();
 
@@ -20,6 +21,11 @@ try {
 } catch (error) {
     console.error(error);
 }
+const rev = new Reverso();
+rev.getConjugation('andare','italian',(err,response)=>{
+    if(err)throw new Error(err.message)
+    console.log(response.verbForms[0])
+})
 
 app.listen(PORT,()=>{
     console.log(`Server on port: ${PORT}`);
