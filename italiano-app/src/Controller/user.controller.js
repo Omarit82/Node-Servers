@@ -12,5 +12,9 @@ export const login = (req,res) => {
 }
 
 export const register = (req,res) => {
-
+    try {
+        res.status(201).json({payload:req.body})
+    } catch (error) {
+        res.status(400).json({message:"Error server connection"})
+    }
 }
