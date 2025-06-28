@@ -15,7 +15,8 @@ export const login = (req,res) => {
 export const register = async(req,res) => {
     try {
         console.log(req.body);
-        const check = await userModel.findOne({"user_email":req.body.user_email})
+        const check = await userModel.findOne({user_email:req.body.user_email})
+        console.log(check);
         if (check){
             /**El usuario ya existe */
             res.status(409).json({message:"user already exists"});
@@ -24,15 +25,13 @@ export const register = async(req,res) => {
                 "user_name": req.body.user_name,
                 "user_lastname": req.body.user_lastname,
                 "user_email": req.body.user_email,
-                "user_pass": encriptar(req.body.user_pass),
-                "user_file": req.body.file
+                "user_password": encriptar(req.body.user_pass),
+                "user_avatar": req.body.file
             }
+            console.log(data);
             const register = await userModel.create(data);
-            const response = await register.json();
-            res.status(201).json({payload:response})
+            res.status(201).json({payload:register})
         }
-         
-        
     } catch (error) {
         res.status(500).json({message:"Error server connection"})
     }
