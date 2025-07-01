@@ -8,6 +8,18 @@ const verbosSchema = new Schema({
     verbo_trd:{
         type:String,
         required:true
+    },
+    indicativo:{
+        type:Array
+    },
+    congiuntivo:{
+        type:Array
+    },
+    condizionale:{
+        type:Array
+    },
+    imperativo:{
+        type:Array
     }
 })
 

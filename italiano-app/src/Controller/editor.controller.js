@@ -3,6 +3,7 @@ import Reverso from 'reverso-api';
 
 export const editorController = async(req,res) => {
     try {
+        console.log(req.body);
         const check = await verbModel.findOne({verbo_it:req.body.verbo_it});
         if(check){
             res.status(409).json({message:"Verbo già creato"})
@@ -25,15 +26,14 @@ export const getVerbos = async(req,res) => {
     }
 }
 
-export const getConiugazione = async (req,res) => {
+export const getConiugazione = async(req,res) => {
     try {
-        const verbo = req.body;
-        const rev = new Reverso();
-        rev.getConjugation(verbo.verbo,'italian',(err,response)=>{
-            if(err)throw new Error(err.message)
-            res.status(200).json({payload:response})
-        })
-
+        const congiugazione = await verbModel.findOne({verbo_it:req.body.verbo});
+        if(!congiugazione){
+            res.status(400).json({message:"Verbo non trovato"});
+        }else{
+            res.status(200).json({message:"Trovato!",payload:congiugazione});
+        }
     } catch (error) {
         res.status(500).json({message:"Server connection error",error:error})
     }
