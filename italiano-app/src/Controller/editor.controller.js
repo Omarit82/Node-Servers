@@ -1,5 +1,4 @@
 import verbModel from "../Model/verbos.model.js";
-import Reverso from 'reverso-api';
 
 export const editorController = async(req,res) => {
     try {
