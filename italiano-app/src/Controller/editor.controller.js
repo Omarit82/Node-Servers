@@ -2,7 +2,6 @@ import verbModel from "../Model/verbos.model.js";
 
 export const editorController = async(req,res) => {
     try {
-        console.log(req.body);
         const check = await verbModel.findOne({verbo_it:req.body.verbo_it});
         if(check){
             res.status(409).json({message:"Verbo già creato"})

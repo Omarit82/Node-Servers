@@ -4,16 +4,20 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import indexRouter from './Routes/index.routes.js';
 import cors from 'cors';
-
+import session from 'express-session';
 
 dotenv.config();
 
 const PORT = process.env.PORT;
 
+
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(cookieParser(process.env.CODE));
+app.use(session({secret:`${process.env.SESSION}`, resave:true, saveUninitialized:true}))
+console.log(session);
+
 app.use('/api',indexRouter);
 
 try {

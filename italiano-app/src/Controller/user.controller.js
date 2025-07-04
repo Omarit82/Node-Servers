@@ -1,12 +1,31 @@
-import { encriptar } from "../bcrypt.js";
+import { encriptar, paswordCheck } from "../bcrypt.js";
 import userModel from "../Model/user.model.js";
+import session from "express-session";
 
-export const login = (req,res) => {
+export const login = async(req,res) => {
     try {
-        const {user,pass} = req.body;    
-        res.status(200).json({user:user,pass:pass})
+        const {email,pass} = req.body;
+        //GESTION DE LOGIN - CHECKEO SI EL USUARIO EXISTE - COMPARO LOS PASSWORDS
+        const consulta = await userModel.findOne({user_email:email});
+        if(consulta){
+            const resultado = paswordCheck(pass,consulta.user_password);
+            if(resultado){
+                // AGREGO INFO A LA SESSION -> CHEQUEO COOKIE POR THEME*
+                session.Session.user = {
+                    "user_name": consulta.user_name,
+                    "user_avatar": consulta.user_avatar 
+                }
+                console.log(session);
+                
+                res.status(200).json({"Login":resultado,"Message":"Login!"})
+            }else{
+                res.status(400).json({"Message":"Login failed!"})
+            }
+        }else{
+            res.status(404).json({message:"User not found"})  
+        }
     } catch (error) {
-        res.status(400).json({message:"Error server connection"})
+        res.status(500).json({message:"Error server connection"})
     }
    
 
@@ -14,9 +33,7 @@ export const login = (req,res) => {
 
 export const register = async(req,res) => {
     try {
-        console.log(req.body);
         const check = await userModel.findOne({user_email:req.body.user_email})
-        console.log(check);
         if (check){
             /**El usuario ya existe */
             res.status(409).json({message:"user already exists"});
@@ -28,7 +45,6 @@ export const register = async(req,res) => {
                 "user_password": encriptar(req.body.user_pass),
                 "user_avatar": req.body.file
             }
-            console.log(data);
             const register = await userModel.create(data);
             res.status(201).json({payload:register})
         }
