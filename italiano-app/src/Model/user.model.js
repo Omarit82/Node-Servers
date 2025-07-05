@@ -19,6 +19,10 @@ const userSchema = new Schema({
     },
     user_avatar:{
         type:String,
+    },
+    user_type:{
+        type:String,
+        default:"user"
     }
 });
 

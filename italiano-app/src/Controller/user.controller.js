@@ -1,4 +1,4 @@
-import { encriptar, paswordCheck } from "../bcrypt.js";
+import { encriptar, paswordCheck } from "../utils/bcrypt.js";
 import userModel from "../Model/user.model.js";
 import session from "express-session";
 
@@ -13,10 +13,11 @@ export const login = async(req,res) => {
                 // AGREGO INFO A LA SESSION -> CHEQUEO COOKIE POR THEME*
                 session.Session.user = {
                     "user_name": consulta.user_name,
-                    "user_avatar": consulta.user_avatar 
+                    "user_email":consulta.user_email,
+                    "user_avatar": consulta.user_avatar,
+                    "user_type": consulta.user_type
                 }
-                console.log(session);
-                
+                console.log(session);  
                 res.status(200).json({"Login":resultado,"Message":"Login!"})
             }else{
                 res.status(400).json({"Message":"Login failed!"})
