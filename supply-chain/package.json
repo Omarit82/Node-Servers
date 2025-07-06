@@ -1,0 +1,17 @@
+{
+  "name": "supply-chain",
+  "version": "1.0.0",
+  "description": "Web tool for supply chain",
+  "license": "ISC",
+  "author": "Omar Roselli",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0",
+    "mongoose": "^8.16.1"
+  }
+}
