@@ -19,6 +19,10 @@ const userSchema = new Schema({
         type: String,
         required:true
     },
+    googleId:{
+        type:String,
+        default:""
+    },
     user:{
         type: String,
         default:"user"

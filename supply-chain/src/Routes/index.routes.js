@@ -3,6 +3,6 @@ import sessionsRouter from './sessions.routes.js';
 
 const indexRouter = Router();
 
-indexRouter.use('/sessions',sessionsRouter);
+indexRouter.use('/',sessionsRouter);
 
 export default indexRouter;

@@ -1,5 +1,6 @@
 import passport from "passport";
 import local from 'passport-local';
+import GoogleStrategy from 'passport-google-oauth20';
 import { encriptar,checkPassword } from "../utils/bcrypt.js";
 import { userModel } from "../Models/user.model.js";
 
@@ -8,24 +9,31 @@ const localStrategy = local.Strategy;
 const initializedPassport = () =>{
     passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
         try {
-            const {nombre,apellido,email,password} = req.body;
-            const emailCheck = await userModel.findOne({email:email});
+            const {nombre,apellido} = req.body;
+            //chequeo de email de deitres:
+            const array = username.split('@');
+            const dominio = array[1];
+            if(dominio !== 'deitres.com'){
+                return done('El email ingresado no corresponde a la organizacion',false)
+            }
+            const emailCheck = await userModel.findOne({email:username});           
             if(emailCheck){
-                return done(null,false);//No devuelvo error - no genero un nuevo usuario.
+                return done(null,false,{Message:" Email ya registrado"});//No devuelvo error - no genero un nuevo usuario.
             }else{
                 const newUser = {
                     nombre:nombre,
                     apellido:apellido,
-                    email:email,
+                    email:username,
                     password:encriptar(password)
                 };
                 const createUser = await userModel.create(newUser);
-                done(null,newUser); // No devuelvo error - genero el nuevo usuario.
+                done(null,createUser); // No devuelvo error - genero el nuevo usuario.
             }        
         } catch (error) {
             done(error);
         }
     }))
+
     passport.use('login', new localStrategy({usernameField:'email'},async(username,password,done)=>{
         try {
             const user = await userModel.findOne({email:username})
@@ -37,6 +45,32 @@ const initializedPassport = () =>{
             return done(error)
         }
     }))
+
+    /**Google */
+    passport.use(new GoogleStrategy({
+        clientID: process.env.CLIENT_ID,
+        clientSecret: process.env.CLIENT_SECRET,
+        callbackURL: "/auth/google/callback"
+        },
+        async function(accessToken,refreshToken,profile,done){
+            console.log(profile);    
+            try {
+                let user = await userModel.findOne({googleId:profile.id});
+                if(!user){
+                    user = await userModel.create({
+                        googleId:profile.id, 
+                        email:profile.emails[0].value,
+                        nombre:profile.name.givenName,
+                        apellido:profile.name.familyName,
+                        password:encriptar(process.env.GOOGLE_PASS)
+                    })
+                }
+                done(null,user);
+            } catch (error) {
+                done(error)
+            }
+        }
+    ))
 
     passport.serializeUser((user,done)=>{
         done(null,user._id);
