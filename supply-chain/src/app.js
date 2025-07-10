@@ -15,6 +15,7 @@ initializedPassport();
 const app = express();
 const PORT = process.env.PORT;
 
+
 app.use(express.json());
 app.use(cookieParser(process.env.SESSION_CODE))
 app.use(session({

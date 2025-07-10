@@ -14,17 +14,11 @@ export const hubspotConnection =(req,res) => {
     try {
         //HUBSPOT APP CONFIG  
         const HUBSPOT_CLIENT_ID = process.env.HUBSPOT_CLIENT_ID;
-        const HUBSPOT_CLIENT_SECRET = process.env.HUBSPOT_CLIENT_SECRET;
-        let scopes = ['crm.objects.contacts.read'];
-        if (process.env.SCOPE) {
-            scopes = (process.env.SCOPE.split(/ |, ?|%20/)).join(' ');
-        }
         const REDIRECT_URI = `http://localhost:${process.env.PORT}/hubspot/oauth-callback`;
         //OAuth 2.0 flow
         const authURL = 
             'https://app.hubspot.com/oauth/authorize'+
             `?client_id=${encodeURIComponent(HUBSPOT_CLIENT_ID)}`+
-            //`&scope=${encodeURIComponent(scopes)}`+
             `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=oauth`
         res.redirect(authURL);     
     } catch (error) {
