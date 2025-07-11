@@ -1,6 +1,8 @@
 
-export const exchageForTokens = async (userId,code) =>{
+export const exchageForTokens = async (sessionID,code) =>{
     try {
+        console.log('TEST // SESSION ID: ',sessionID);
+        
         const authCodeProof ={
             'grant_type': 'authorization_code',
             'client_id': process.env.HUBSPOT_CLIENT_ID,
@@ -20,8 +22,6 @@ export const exchageForTokens = async (userId,code) =>{
             body:formData
         })
         const response = await responseBody.text();
-        console.log('RESPONSE: '+(response));
-
         let parsedBody;
         try {
             parsedBody = JSON.parse(response);
@@ -32,8 +32,9 @@ export const exchageForTokens = async (userId,code) =>{
             throw new Error(`HTTP Error! status:${response.status} // ${response.statusText}`);
         }
         const tokens = await parsedBody;
-        refreshTokenStore[userId] = tokens.refresh_token;
-        accessTokenCache.set(userId, tokens.access_token, Math.round(tokens.expires_in*0.75));
+        // refreshTokenStore[userId] = tokens.refresh_token;
+        
+        // accessTokenCache.set(userId, tokens.access_token, Math.round(tokens.expires_in*0.75));
         return tokens.access_token;
     } catch (error) {
         console.log("ERROR // "+error);
