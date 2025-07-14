@@ -17,9 +17,21 @@ export const login = async(req,res) => {
 
 export const logout = async(req,res) => {
     try {
-        req.session.destroy
+        req.session.destroy(e => {
+            console.log("Fallo al destruir la session ",e);
+        });
+        res.status(200).clearCookie('connect.sid').json({Message:"Session destroyed"})
     } catch (error) {
-        
+        res.status(500).json({Message:"Session not destroyed"});
+    }
+}
+
+export const sessionCheck = (req,res) => {
+    try {
+        console.log(req.session);
+        res.status(200).json({Message:"Session check",Payload:req.session})
+    } catch (error) {
+        res.status(500).json({Message:"Error!"})
     }
 }
 

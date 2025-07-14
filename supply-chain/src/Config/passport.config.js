@@ -34,7 +34,7 @@ const initializedPassport = () =>{
         }
     }))
 
-    passport.use('login', new localStrategy({usernameField:'email'},async(username,password,done)=>{
+    passport.use('login', new localStrategy({usernameField:'email'}, async(username,password,done)=>{
         try {
             const user = await userModel.findOne({email:username})
             if(user && checkPassword(password,user.password)){
@@ -47,13 +47,8 @@ const initializedPassport = () =>{
     }))
 
     /**Google */
-    passport.use(new GoogleStrategy({
-        clientID: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-        callbackURL: "/auth/google/callback"
-        },
-        async function(accessToken,refreshToken,profile,done){
-            console.log(profile);    
+    passport.use(new GoogleStrategy({clientID: process.env.CLIENT_ID, clientSecret: process.env.CLIENT_SECRET, callbackURL: "/auth/google/callback"},
+        async function(accessToken,refreshToken,profile,done){   
             try {
                 let user = await userModel.findOne({googleId:profile.id});
                 if(!user){

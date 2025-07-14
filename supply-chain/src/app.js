@@ -19,7 +19,7 @@ const PORT = process.env.PORT;
 app.use(express.json());
 app.use(cookieParser(process.env.SESSION_CODE))
 app.use(session({
-    store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60}),
+    store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60*60*24}),
     secret:process.env.SESSION_CODE,
     resave:true,
     saveUninitialized:true
