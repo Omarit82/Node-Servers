@@ -6,5 +6,6 @@ const hubspotRouter = Router();
 hubspotRouter.get('/install',hubspotConnection);
 hubspotRouter.get('/oauth-callback',handleCallback);
 hubspotRouter.get('/tasks',getTasks);
+hubspotRouter.get('/contacts',getContacts);
 
 export default hubspotRouter;

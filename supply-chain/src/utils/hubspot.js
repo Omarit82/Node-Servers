@@ -1,8 +1,18 @@
-import session from "express-session";
 
-export const exchageForTokens = async (sessionID,code) =>{
+export const getAccessToken = async (session) => {
+  // Check si existe un token en la session del user.
+  if (!session.hubspotToken) {
+    console.log('No existe token en el User - refresh del Token');
+    const refresh = await refreshAccessToken(session);
+    console.log("Buscando el refresh // ",refresh);
+    
+  }
+  return session.hubspotToken.access_token;
+};
+
+export const exchageForTokens = async (session,code) =>{
     try {
-        console.log('TEST // SESSION ID: ',sessionID);
+        console.log('Dentro del ExchangeForTokens // SESSION ID: ',session);
         
         const authCodeProof ={
             'grant_type': 'authorization_code',
@@ -33,7 +43,8 @@ export const exchageForTokens = async (sessionID,code) =>{
             throw new Error(`HTTP Error! status:${response.status} // ${response.statusText}`);
         }
         const tokens = await parsedBody;
-        session.hubspotToken = tokens;
+        //session.hubspotToken = tokens;
+        console.log(session);
         return tokens.access_token;
     } catch (error) {
         console.log("ERROR // "+error);
@@ -41,30 +52,23 @@ export const exchageForTokens = async (sessionID,code) =>{
     }
 }
 
-export const refreshAccessToken = async (userId) => {
+export const refreshAccessToken = async (session) => {
     try {
+       // console.log("Dentro del refreshAccessToken: // ",session);
+        
         const refreshTokenProof = {
             grant_type: 'refresh_token',
             client_id: process.env.HUBSPOT_CLIENT_ID,
             client_secret: process.env.HUBSPOT_CLIENT_SECRET,
-            redirect_uri: `http://localhost:${process.env.PORT}/oauth-callback`,
-            refresh_token: refreshTokenStore[userId]
+            redirect_uri: `http://localhost:${process.env.PORT}/oauth-callback`
         }
-        return await exchageForTokens(userId, refreshTokenProof);
+        return await exchageForTokens(session, refreshTokenProof);
     } catch (error) {
         console.error(error);
     }
 }
 
-export const getAccessToken = async (userId) => {
-  // If the access token has expired, retrieve a new one using the refresh token
-  if (!accessTokenCache.get(userId)) {
-    console.log('Refreshing expired access token');
-    await refreshAccessToken(userId);
-  }
-  return accessTokenCache.get(userId);
-};
 
-export const isAuthorized = (userId) => {
-  return refreshTokenStore[userId] ? true : false;
+export const isAuthorized = (session) => {
+    return session.hubspotToken ? true : false;
 };

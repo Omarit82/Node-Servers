@@ -1,12 +1,16 @@
 import session from "express-session";
 import hubspot from "@hubspot/api-client";
-import { exchageForTokens, isAuthorized } from "../utils/hubspot.js";
+import { exchageForTokens, getAccessToken, isAuthorized } from "../utils/hubspot.js";
 
 export const getTasks = async (req,res) => {
     try {
-        console.log(req.session);
-        //isAuthorized()
-        const hub = new hubspot.Client({"accessToken":session.hubspotToken.access_token});
+        if(!isAuthorized(req.session)){
+            console.log("UNAUTHORIZED");
+            getAccessToken(req.session);
+        }
+        console.log("AUTHORIZED");
+        const token = await getAccessToken();
+        const hub = new hubspot.Client({"accessToken":token});
         const limit = 100;
         const after = 39613969944;
         const properties = undefined;
@@ -24,6 +28,7 @@ export const getTasks = async (req,res) => {
 export const getContacts = async(req,res) => {
     /**Tengo que hacer la llamada async a hubspot */
     try {
+        
         const contacts = new hubspot.Client({"accessToken":session.hubspotToken.access_token});
         const limit = 100;
         const after = undefined;
