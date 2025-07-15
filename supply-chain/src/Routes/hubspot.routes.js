@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getTasks, hubspotConnection, handleCallback } from "../Controllers/husbpot.controller.js";
+import { hubspotConnection, handleCallback, getContacts, getTasks } from "../Controllers/husbpot.controller.js";
 
 const hubspotRouter = Router();
 
