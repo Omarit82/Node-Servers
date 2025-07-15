@@ -7,6 +7,8 @@ import { userModel } from "../Models/user.model.js";
 const localStrategy = local.Strategy;
 
 const initializedPassport = () =>{
+
+    
     passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
         try {
             const {nombre,apellido} = req.body;

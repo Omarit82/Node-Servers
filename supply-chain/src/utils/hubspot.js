@@ -1,3 +1,4 @@
+import session from "express-session";
 
 export const exchageForTokens = async (sessionID,code) =>{
     try {
@@ -32,9 +33,7 @@ export const exchageForTokens = async (sessionID,code) =>{
             throw new Error(`HTTP Error! status:${response.status} // ${response.statusText}`);
         }
         const tokens = await parsedBody;
-        // refreshTokenStore[userId] = tokens.refresh_token;
-        
-        // accessTokenCache.set(userId, tokens.access_token, Math.round(tokens.expires_in*0.75));
+        session.hubspotToken = tokens;
         return tokens.access_token;
     } catch (error) {
         console.log("ERROR // "+error);
