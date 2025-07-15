@@ -15,23 +15,26 @@ export const login = async(req,res) => {
     }
 }
 
-export const logout = async(req,res) => {
+export const logout = async(req,res,next) => {
     try {
-        req.session.destroy(e => {
-            console.log("Fallo al destruir la session ",e);
-        });
-        res.status(200).clearCookie('connect.sid').json({Message:"Session destroyed"})
+        req.logout((err)=>{
+            if(err){
+                return next (err)
+            }
+            if (!req.session) {
+                return res.status(400).json({ Message: "No existe una session activa." });
+            }
+            req.session.destroy(err => { 
+                if (err) {
+                        console.error("Error al destruir la sesión en MongoDB:", err);
+                        return res.status(500).json({ Message: "Error al cerrar sesión" });
+                }
+                res.clearCookie('connect.sid');
+                res.status(200).json({ Message: "Sesión cerrada exitosamente" });
+            })
+        })         
     } catch (error) {
-        res.status(500).json({Message:"Session not destroyed"});
-    }
-}
-
-export const sessionCheck = (req,res) => {
-    try {
-        console.log(req.session);
-        res.status(200).json({Message:"Session check",Payload:req.session})
-    } catch (error) {
-        res.status(500).json({Message:"Error!"})
+        res.status(500).json({Message:"Session no eliminada"});
     }
 }
 

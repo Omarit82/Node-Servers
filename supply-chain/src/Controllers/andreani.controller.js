@@ -6,11 +6,9 @@ export const  andreaniLogin = async(req,res) => {
             "userName": process.env.ANDREANI_USER,
             "password": process.env.ANDREANI_PASS
         }
-        const response = await fetch('https://apisqa.andreani.com/login',{
+        const response = await fetch('https://apis.andreani.com/login',{
             headers:{
-                "Content-Type":"application/json",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true
+                "Content-Type":"application/json"
             },
             method:"post",
             body:body
