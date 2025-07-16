@@ -1,26 +1,36 @@
+import { hubspotConnection } from "../Controllers/husbpot.controller.js";
 
 export const getAccessToken = async (session) => {
   // Check si existe un token en la session del user.
   if (!session.hubspotToken) {
     console.log('No existe token en el User - refresh del Token');
   }
-  const refresh = await refreshAccessToken(session);
-  return refresh;
+  hubspotConnection();
 };
 
-export const exchageForTokens = async (session,code) =>{
+export const refreshAccessToken = async (session) => {
     try {
-        console.log('Dentro del ExchangeForTokens //',);
-        const authCodeProof ={
-            'grant_type': 'authorization_code',
-            'client_id': process.env.HUBSPOT_CLIENT_ID,
-            'client_secret': process.env.HUBSPOT_CLIENT_SECRET,
-            'redirect_uri': `http://localhost:${process.env.PORT}/hubspot/oauth-callback`,
-            'code': code
+        const refreshTokenProof = {
+            grant_type: 'refresh_token',
+            client_id: process.env.HUBSPOT_CLIENT_ID,
+            client_secret: process.env.HUBSPOT_CLIENT_SECRET,
+            redirect_uri: `http://localhost:${process.env.PORT}/oauth-callback`,
+            refresh_token: session.hubspotToken.refresh_token
         }
+        console.log("Dentro del refreshAccessToken: // ");
+        const response = await exchageForTokens(refreshTokenProof);
+        console.log("Respuesta del refresh: ",response);
+        return response;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+export const exchageForTokens = async (code) =>{
+    try {
         const formData = new URLSearchParams();
-        for (const key in authCodeProof) {
-            formData.append(key, authCodeProof[key])
+        for (const key in code) {
+            formData.append(key, code[key])
         }
         const responseBody = await fetch('https://api.hubapi.com/oauth/v1/token',{
             method:"POST",
@@ -40,27 +50,9 @@ export const exchageForTokens = async (session,code) =>{
             throw new Error(`HTTP Error! status:${response.status} // ${response.statusText}`);
         }
         const tokens = await parsedBody;
-        //session.hubspotToken = tokens;
-        console.log("TOKENS:",tokens);
         return tokens;
     } catch (error) {
-        console.log("ERROR EN EXCHANGE FOR TOKENS!// "+error);
         return (error);
-    }
-}
-
-export const refreshAccessToken = async (session) => {
-    try {
-       // console.log("Dentro del refreshAccessToken: // ",session);
-        const refreshTokenProof = {
-            grant_type: 'refresh_token',
-            client_id: process.env.HUBSPOT_CLIENT_ID,
-            client_secret: process.env.HUBSPOT_CLIENT_SECRET,
-            redirect_uri: `http://localhost:${process.env.PORT}/oauth-callback`
-        }
-        return await exchageForTokens(session, refreshTokenProof);
-    } catch (error) {
-        console.error(error);
     }
 }
 

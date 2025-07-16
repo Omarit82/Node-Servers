@@ -1,23 +1,81 @@
-import session from "express-session";
 import hubspot from "@hubspot/api-client";
-import { exchageForTokens, getAccessToken, isAuthorized } from "../utils/hubspot.js";
+import { exchageForTokens, isAuthorized, refreshAccessToken } from "../utils/hubspot.js";
+
+export const getCompanies = async (req,res) => {
+    try {
+        if(!isAuthorized(req.session)){
+            res.redirect('/hubspot/install')
+        }else{
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
+                console.log("TOKEN VENCIDO");
+                const token = await refreshAccessToken(req.session);
+                req.session.hubspotToken = token;
+                req.session.hubspotToken.Create = Date.now();
+            }           
+        }
+        console.log(parseInt(Date.now()/1000)-(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in));
+        console.log("TOKEN VIGENTE");
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
+        //Llamado a la API
+        const response = await hub.crm.companies.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
+        res.status(200).json({Payload:response})
+    } catch (error) {
+        res.status(500).json({"Message":error.message})
+    }
+}
+
+export const getTickets = async(req,res) => {
+    try {
+        if(!isAuthorized(req.session)){
+            res.redirect('/hubspot/install')
+        }else{
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
+                const token = await refreshAccessToken(req.session);
+                req.session.hubspotToken = token;
+                req.session.hubspotToken.Create = Date.now();
+            }           
+        }
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
+        const limit = 100;
+        const after = undefined;
+        const properties = undefined;
+        const propertiesWithHistory = undefined;
+        const associations = undefined;
+        const archived = false;
+        //Llamado a la API
+        const response = await hub.crm.tickets.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
+        res.status(200).json({Payload:response})
+    } catch (error) {
+        res.status(500).json({"Message":error.message})
+    }
+}
 
 export const getTasks = async (req,res) => {
     try {
         if(!isAuthorized(req.session)){
-            console.log("UNAUTHORIZED");
-            getAccessToken(req.session);
+            res.redirect('/hubspot/install')
+        }else{
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
+                const token = await refreshAccessToken(req.session);
+                req.session.hubspotToken = token;
+                req.session.hubspotToken.Create = Date.now();
+            }           
         }
-        console.log("AUTHORIZED");
-        const token = await getAccessToken();
-        const hub = new hubspot.Client({"accessToken":token});
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});        
         const limit = 100;
         const after = 39613969944;
         const properties = undefined;
         const propertiesWithHistory = undefined;
         const associations = undefined;
         const archived = false;
-        const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
+        //Llamado a la API DEALS
+        const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived);
+        //consulto engagements:
+        console.log(response.results[0].id);
+        const resultado = [];
+        response.results.forEach(deal => {
+            console.log(deal.id);
+        });
         res.status(200).json({Payload:response})
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
@@ -28,10 +86,18 @@ export const getTasks = async (req,res) => {
 export const getContacts = async(req,res) => {
     /**Tengo que hacer la llamada async a hubspot */
     try {
-        
-        const contacts = new hubspot.Client({"accessToken":session.hubspotToken.access_token});
+       if(!isAuthorized(req.session)){
+            res.redirect('/hubspot/install')
+        }else{
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
+                const token = await refreshAccessToken(req.session);
+                req.session.hubspotToken = token;
+                req.session.hubspotToken.Create = Date.now();
+            }           
+        }
+        const contacts = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
         const limit = 100;
-        const after = undefined;
+        const after = 74273;
         const properties = undefined;
         const propertiesWithHistory = undefined;
         const associations = undefined;
@@ -44,7 +110,7 @@ export const getContacts = async(req,res) => {
     }
 }
 
-export const hubspotConnection =(req,res) => {
+export const hubspotConnection = (req,res) => {
     try {
         //HUBSPOT APP CONFIG  
         const HUBSPOT_CLIENT_ID = process.env.HUBSPOT_CLIENT_ID;
@@ -62,15 +128,22 @@ export const hubspotConnection =(req,res) => {
 
 export const handleCallback = async (req,res) => {
     try {
-        if(req.query.code){
-            const token = await exchageForTokens(req.sessionID,req.query.code);            
-            if(token.message){
-                return res.redirect(`/error?msg=${token.message}`);
-            }
-            res.redirect('/hubspot/tasks');
+        const authCodeProof ={
+            'grant_type': 'authorization_code',
+            'client_id': process.env.HUBSPOT_CLIENT_ID,
+            'client_secret': process.env.HUBSPOT_CLIENT_SECRET,
+            'redirect_uri': `http://localhost:${process.env.PORT}/hubspot/oauth-callback`,
+            'code': req.query.code
         }
-    } catch (error) {
+        const token = await exchageForTokens(authCodeProof);            
+        if(token.message){
+            return res.redirect(`/error?msg=${token.message}`);
+        }
+        req.session.hubspotToken = token;    
+        req.session.hubspotToken.Create = Date.now();        
+        res.redirect('/hubspot/tasks'); /**DEBIERA IR A HOME?**/
+    }
+     catch (error) {
         console.error(error);
-        
     }
 }
