@@ -20,7 +20,7 @@ export const getTasks = async (req,res) => {
         const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
         res.status(200).json({Payload:response})
     } catch (error) {
-        console.log('ERROR // ',error);
+        console.log('ERROR GET TASKS// ',error);
         res.status(500).json({"Message":error.message})
     }
 }

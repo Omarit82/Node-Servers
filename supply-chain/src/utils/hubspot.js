@@ -3,17 +3,14 @@ export const getAccessToken = async (session) => {
   // Check si existe un token en la session del user.
   if (!session.hubspotToken) {
     console.log('No existe token en el User - refresh del Token');
-    const refresh = await refreshAccessToken(session);
-    console.log("Buscando el refresh // ",refresh);
-    
   }
-  return session.hubspotToken.access_token;
+  const refresh = await refreshAccessToken(session);
+  return refresh;
 };
 
 export const exchageForTokens = async (session,code) =>{
     try {
-        console.log('Dentro del ExchangeForTokens // SESSION ID: ',session);
-        
+        console.log('Dentro del ExchangeForTokens //',);
         const authCodeProof ={
             'grant_type': 'authorization_code',
             'client_id': process.env.HUBSPOT_CLIENT_ID,
@@ -44,10 +41,10 @@ export const exchageForTokens = async (session,code) =>{
         }
         const tokens = await parsedBody;
         //session.hubspotToken = tokens;
-        console.log(session);
-        return tokens.access_token;
+        console.log("TOKENS:",tokens);
+        return tokens;
     } catch (error) {
-        console.log("ERROR // "+error);
+        console.log("ERROR EN EXCHANGE FOR TOKENS!// "+error);
         return (error);
     }
 }
@@ -55,7 +52,6 @@ export const exchageForTokens = async (session,code) =>{
 export const refreshAccessToken = async (session) => {
     try {
        // console.log("Dentro del refreshAccessToken: // ",session);
-        
         const refreshTokenProof = {
             grant_type: 'refresh_token',
             client_id: process.env.HUBSPOT_CLIENT_ID,
