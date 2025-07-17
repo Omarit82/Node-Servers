@@ -1,12 +1,3 @@
-import { hubspotConnection } from "../Controllers/husbpot.controller.js";
-
-export const getAccessToken = async (session) => {
-  // Check si existe un token en la session del user.
-  if (!session.hubspotToken) {
-    console.log('No existe token en el User - refresh del Token');
-  }
-  hubspotConnection();
-};
 
 export const refreshAccessToken = async (session) => {
     try {

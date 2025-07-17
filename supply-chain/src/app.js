@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import indexRouter from './Routes/index.routes.js';
 import { __dirname } from './utils/path.js';
-import initializedPassport from './Config/passport.config.js';
+import {initializedPassport} from './Config/passport.config.js';
 import passport from 'passport';
 
 dotenv.config();

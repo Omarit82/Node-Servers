@@ -7,16 +7,19 @@ export const getCompanies = async (req,res) => {
             res.redirect('/hubspot/install')
         }else{
             if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
-                console.log("TOKEN VENCIDO");
                 const token = await refreshAccessToken(req.session);
                 req.session.hubspotToken = token;
                 req.session.hubspotToken.Create = Date.now();
             }           
         }
-        console.log(parseInt(Date.now()/1000)-(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in));
-        console.log("TOKEN VIGENTE");
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
         //Llamado a la API
+        const limit = 100;
+        const after = undefined;
+        const properties = undefined;
+        const propertiesWithHistory = undefined;
+        const associations = undefined;
+        const archived = false;
         const response = await hub.crm.companies.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
         res.status(200).json({Payload:response})
     } catch (error) {
@@ -53,30 +56,41 @@ export const getTickets = async(req,res) => {
 export const getTasks = async (req,res) => {
     try {
         if(!isAuthorized(req.session)){
+            console.log("Is Authorized?// FALSE");
             res.redirect('/hubspot/install')
         }else{
-            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
+            console.log("Is Authorized?// TRUE");
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){               
                 const token = await refreshAccessToken(req.session);
                 req.session.hubspotToken = token;
                 req.session.hubspotToken.Create = Date.now();
-            }           
+            }  
+            console.log(((parseInt(Date.now()/1000)))-((parseInt(req.session.hubspotToken.Create/1000))+req.session.hubspotToken.expires_in));
+            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});        
+            const limit = 100;
+            const after = 39613969944;
+            const properties = undefined;
+            const propertiesWithHistory = undefined;
+            const associations = undefined;
+            const archived = false;
+            //Llamado a la API DEALS
+            const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived);
+            //consulto Engagements:
+            console.log(response.results[0].id);
+            const resultado = [];
+            response.results.forEach(deal => {
+                resultado.push(deal.id);
+            }); 
+            const engagements = await fetch(`https://api.hubapi.com/engagements/v1/engagements/paged?objectType=DEAL&objectId=${resultado[0]}`,{
+                method:"GET",
+                headers:{
+                    "Authorization":`Bearer ${req.session.hubspotToken.access_token}`
+                }
+            })          
+            const print = await engagements.json();
+            console.log(print.results[3]);
+            res.status(200).json({Payload:response.results[0]})         
         }
-        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});        
-        const limit = 100;
-        const after = 39613969944;
-        const properties = undefined;
-        const propertiesWithHistory = undefined;
-        const associations = undefined;
-        const archived = false;
-        //Llamado a la API DEALS
-        const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived);
-        //consulto engagements:
-        console.log(response.results[0].id);
-        const resultado = [];
-        response.results.forEach(deal => {
-            console.log(deal.id);
-        });
-        res.status(200).json({Payload:response})
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
         res.status(500).json({"Message":error.message})
@@ -93,17 +107,17 @@ export const getContacts = async(req,res) => {
                 const token = await refreshAccessToken(req.session);
                 req.session.hubspotToken = token;
                 req.session.hubspotToken.Create = Date.now();
-            }           
+            }       
+            const contacts = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+            const limit = 100;
+            const after = 74273;
+            const properties = undefined;
+            const propertiesWithHistory = undefined;
+            const associations = undefined;
+            const archived = false;
+            const response = await contacts.crm.contacts.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
+            res.status(200).json({Payload:response})    
         }
-        const contacts = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const limit = 100;
-        const after = 74273;
-        const properties = undefined;
-        const propertiesWithHistory = undefined;
-        const associations = undefined;
-        const archived = false;
-        const response = await contacts.crm.contacts.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
-        res.status(200).json({Payload:response})
     } catch (error) {
         console.log('ERROR // ',error);
         res.status(500).json({"Message":"Server connection error"})
@@ -147,3 +161,12 @@ export const handleCallback = async (req,res) => {
         console.error(error);
     }
 }
+
+export const getAccessToken = async (req,res,next) => {
+  // Check si existe un token en la session del user.
+  if (req.session.hubspotToken) {
+    console.log('El user tiene Token');
+    next()
+  }
+  hubspotConnection();
+};

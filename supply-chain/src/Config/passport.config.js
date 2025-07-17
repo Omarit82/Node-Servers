@@ -6,9 +6,8 @@ import { userModel } from "../Models/user.model.js";
 
 const localStrategy = local.Strategy;
 
-const initializedPassport = () =>{
+export const initializedPassport = () =>{
 
-    
     passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
         try {
             const {nombre,apellido} = req.body;
@@ -78,5 +77,9 @@ const initializedPassport = () =>{
         done(null,user);
     })
 }
-
-export default initializedPassport;
+export const ensureAuthenticate = (req,res,next) => {
+    if(req.isAuthenticated()){
+        return next();
+    }
+    res.status(401).redirect('/auth/google');
+}
