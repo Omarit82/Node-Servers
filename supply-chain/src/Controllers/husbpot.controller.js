@@ -56,40 +56,50 @@ export const getTickets = async(req,res) => {
 export const getTasks = async (req,res) => {
     try {
         if(!isAuthorized(req.session)){
-            console.log("Is Authorized?// FALSE");
             res.redirect('/hubspot/install')
         }else{
-            console.log("Is Authorized?// TRUE");
             if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){               
                 const token = await refreshAccessToken(req.session);
                 req.session.hubspotToken = token;
                 req.session.hubspotToken.Create = Date.now();
             }  
-            console.log(((parseInt(Date.now()/1000)))-((parseInt(req.session.hubspotToken.Create/1000))+req.session.hubspotToken.expires_in));
-            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});        
-            const limit = 100;
-            const after = 39613969944;
-            const properties = undefined;
-            const propertiesWithHistory = undefined;
-            const associations = undefined;
-            const archived = false;
-            //Llamado a la API DEALS
-            const response = await hub.crm.deals.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived);
-            //consulto Engagements:
-            console.log(response.results[0].id);
-            const resultado = [];
-            response.results.forEach(deal => {
-                resultado.push(deal.id);
-            }); 
-            const engagements = await fetch(`https://api.hubapi.com/engagements/v1/engagements/paged?objectType=DEAL&objectId=${resultado[0]}`,{
-                method:"GET",
-                headers:{
-                    "Authorization":`Bearer ${req.session.hubspotToken.access_token}`
-                }
-            })          
-            const print = await engagements.json();
-            console.log(print.results[3]);
-            res.status(200).json({Payload:response.results[0]})         
+            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});    
+            const deal = await hub.crm.deals.basicApi.getById(38468871836,['observaciones_para_produccion','numero_de_remito','numero_de_remito','description','datos_para_envio','cantidad_de_equipos']);
+            //console.log(deal);
+            //const propiedades = await hub.crm.properties.coreApi.getAll('deal'); //390 observaciones de produccion - 387 Remito - 383 Guia - 18 Descripcion del Deal - 17 deal type - 12 datos envio - 4 cantidad de equipos - cantidad total(autogenerada) - 2 Cantidad de productos Amiar
+            //const props =[propiedades.results[390],propiedades.results[387],propiedades.results[383],propiedades.results[18],propiedades.results[17],propiedades.results[12],propiedades.results[4],propiedades.results[2]];
+            //const id = associations.results[2].toObjectId;        
+            //const task = await hub.crm.objects.tasks.basicApi.getById(id,['hs_task_status', 'hs_task_priority', 'hs_task_subject', 'hs_task_body',"hs_task_is_completed","hs_task_is_overdue",'hs_timestamp','hubspot_owner_id']);
+            const asociaciones = await hub.crm.associations.v4.basicApi.getPage('deals',dealId,'tasks',undefined,100);
+
+            const tareas = [];
+
+            for (const association of asociaciones.results) {
+            const taskId = association.toObjectId;
+
+            const taskDetails = await hub.crm.tasks.basicApi.getById(taskId, [
+                'hs_task_subject',
+                'hs_task_body',
+                'hs_task_status',
+                'hs_task_priority',
+                'hs_task_assigned_to',
+                'hs_task_due_date',
+                'hs_task_create_date',
+                'hs_task_last_modified_date'
+            ]);
+
+            tareas.push({
+                subject: taskDetails.body.properties.hs_task_subject,
+                body: taskDetails.body.properties.hs_task_body,
+                status: taskDetails.body.properties.hs_task_status,
+                priority: taskDetails.body.properties.hs_task_priority,
+                assignedTo: taskDetails.body.properties.hs_task_assigned_to,
+                dueDate: taskDetails.body.properties.hs_task_due_date,
+                createdAt: taskDetails.body.properties.hs_task_create_date,
+                lastModifiedAt: taskDetails.body.properties.hs_task_last_modified_date
+            });
+            }
+            res.status(200).json({Payload:deal})         
         }
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);

@@ -47,6 +47,9 @@ export const exchageForTokens = async (code) =>{
     }
 }
 
+export const getDeals = () => {
+    
+}
 
 export const isAuthorized = (session) => {
     return session.hubspotToken ? true : false;
