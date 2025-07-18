@@ -66,40 +66,73 @@ export const getTasks = async (req,res) => {
             const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});    
             const deal = await hub.crm.deals.basicApi.getById(38468871836,['observaciones_para_produccion','numero_de_remito','numero_de_remito','description','datos_para_envio','cantidad_de_equipos']);
             //console.log(deal);
-            //const propiedades = await hub.crm.properties.coreApi.getAll('deal'); //390 observaciones de produccion - 387 Remito - 383 Guia - 18 Descripcion del Deal - 17 deal type - 12 datos envio - 4 cantidad de equipos - cantidad total(autogenerada) - 2 Cantidad de productos Amiar
+            const propiedades = await hub.crm.properties.coreApi.getAll('task'); //390 observaciones de produccion - 387 Remito - 383 Guia - 18 Descripcion del Deal - 17 deal type - 12 datos envio - 4 cantidad de equipos - cantidad total(autogenerada) - 2 Cantidad de productos Amiar
             //const props =[propiedades.results[390],propiedades.results[387],propiedades.results[383],propiedades.results[18],propiedades.results[17],propiedades.results[12],propiedades.results[4],propiedades.results[2]];
             //const id = associations.results[2].toObjectId;        
             //const task = await hub.crm.objects.tasks.basicApi.getById(id,['hs_task_status', 'hs_task_priority', 'hs_task_subject', 'hs_task_body',"hs_task_is_completed","hs_task_is_overdue",'hs_timestamp','hubspot_owner_id']);
-            const asociaciones = await hub.crm.associations.v4.basicApi.getPage('deals',dealId,'tasks',undefined,100);
+            //const asociaciones = await hub.crm.associations.v4.basicApi.getPage('deals',dealId,'tasks',undefined,100);
 
-            const tareas = [];
+            // const tareas = [];
 
-            for (const association of asociaciones.results) {
-            const taskId = association.toObjectId;
+            // for (const association of asociaciones.results) {
+            // const taskId = association.toObjectId;
 
-            const taskDetails = await hub.crm.tasks.basicApi.getById(taskId, [
-                'hs_task_subject',
-                'hs_task_body',
-                'hs_task_status',
-                'hs_task_priority',
-                'hs_task_assigned_to',
-                'hs_task_due_date',
-                'hs_task_create_date',
-                'hs_task_last_modified_date'
-            ]);
+            // const taskDetails = await hub.crm.tasks.basicApi.getById(taskId, [
+            //     'hs_task_subject',
+            //     'hs_task_body',
+            //     'hs_task_status',
+            //     'hs_task_priority',
+            //     'hs_task_assigned_to',
+            //     'hs_task_due_date',
+            //     'hs_task_create_date',
+            //     'hs_task_last_modified_date'
+            // ]);
 
-            tareas.push({
-                subject: taskDetails.body.properties.hs_task_subject,
-                body: taskDetails.body.properties.hs_task_body,
-                status: taskDetails.body.properties.hs_task_status,
-                priority: taskDetails.body.properties.hs_task_priority,
-                assignedTo: taskDetails.body.properties.hs_task_assigned_to,
-                dueDate: taskDetails.body.properties.hs_task_due_date,
-                createdAt: taskDetails.body.properties.hs_task_create_date,
-                lastModifiedAt: taskDetails.body.properties.hs_task_last_modified_date
-            });
-            }
-            res.status(200).json({Payload:deal})         
+            // tareas.push({
+            //     subject: taskDetails.body.properties.hs_task_subject,
+            //     body: taskDetails.body.properties.hs_task_body,
+            //     status: taskDetails.body.properties.hs_task_status,
+            //     priority: taskDetails.body.properties.hs_task_priority,
+            //     assignedTo: taskDetails.body.properties.hs_task_assigned_to,
+            //     dueDate: taskDetails.body.properties.hs_task_due_date,
+            //     createdAt: taskDetails.body.properties.hs_task_create_date,
+            //     lastModifiedAt: taskDetails.body.properties.hs_task_last_modified_date
+            // });
+            //}
+            const cards = await hub.crm.objects.tasks.basicApi.getPage(50,undefined,['hs_body_preview','hs_task_is_completed','hs_task_is_past_due_date','hs_task_priority','hs_task_status','hs_task_subject','hs_timestamp','hs_updated_by_user_id','hubspot_owner_id'],undefined,undefined,false,undefined);
+            const cardsFilter = await hub.crm.objects.tasks.searchApi.doSearch({
+                filterGroups: [{
+                    filters: [
+                        {
+                        propertyName: 'hs_task_status',
+                        operator: 'NEQ',
+                        value: 'COMPLETED'
+                        },
+                        {
+                        propertyName: 'hubspot_owner_id',
+                        operator: 'EQ',
+                        value: '50141006' // ID del propietario
+                        }
+                    ]
+                    }
+                ],
+                properties: [
+                    'hs_body_preview',
+                    'hs_created_by_user_id',
+                    'hs_task_completion_count',
+                    'hs_task_is_completed',
+                    'hs_task_is_past_due_date',
+                    'hs_task_priority',
+                    'hs_task_status',
+                    'hs_task_subject',
+                    'hs_timestamp',
+                    'hs_updated_by_user_id',
+                    'hubspot_owner_id',
+                ],
+                limit: 50,
+                after: 0 // paginación si necesitás más resultados
+            })
+            res.status(200).json({Payload:cardsFilter})         
         }
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
