@@ -1,60 +1,9 @@
 import hubspot from "@hubspot/api-client";
 import { exchageForTokens, isAuthorized, refreshAccessToken } from "../utils/hubspot.js";
 
-export const getCompanies = async (req,res) => {
-    try {
-        if(!isAuthorized(req.session)){
-            res.redirect('/hubspot/install')
-        }else{
-            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
-                const token = await refreshAccessToken(req.session);
-                req.session.hubspotToken = token;
-                req.session.hubspotToken.Create = Date.now();
-            }           
-        }
-        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
-        //Llamado a la API
-        const limit = 100;
-        const after = undefined;
-        const properties = undefined;
-        const propertiesWithHistory = undefined;
-        const associations = undefined;
-        const archived = false;
-        const response = await hub.crm.companies.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
-        res.status(200).json({Payload:response})
-    } catch (error) {
-        res.status(500).json({"Message":error.message})
-    }
-}
-
-export const getTickets = async(req,res) => {
-    try {
-        if(!isAuthorized(req.session)){
-            res.redirect('/hubspot/install')
-        }else{
-            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
-                const token = await refreshAccessToken(req.session);
-                req.session.hubspotToken = token;
-                req.session.hubspotToken.Create = Date.now();
-            }           
-        }
-        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
-        const limit = 100;
-        const after = undefined;
-        const properties = undefined;
-        const propertiesWithHistory = undefined;
-        const associations = undefined;
-        const archived = false;
-        //Llamado a la API
-        const response = await hub.crm.tickets.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
-        res.status(200).json({Payload:response})
-    } catch (error) {
-        res.status(500).json({"Message":error.message})
-    }
-}
 
 export const getTasks = async (req,res) => {
-    try {
+    try { 
         if(!isAuthorized(req.session)){
             res.redirect('/hubspot/install')
         }else{
@@ -63,76 +12,75 @@ export const getTasks = async (req,res) => {
                 req.session.hubspotToken = token;
                 req.session.hubspotToken.Create = Date.now();
             }  
-            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});    
-            const deal = await hub.crm.deals.basicApi.getById(38468871836,['observaciones_para_produccion','numero_de_remito','numero_de_remito','description','datos_para_envio','cantidad_de_equipos']);
-            //console.log(deal);
-            const propiedades = await hub.crm.properties.coreApi.getAll('task'); //390 observaciones de produccion - 387 Remito - 383 Guia - 18 Descripcion del Deal - 17 deal type - 12 datos envio - 4 cantidad de equipos - cantidad total(autogenerada) - 2 Cantidad de productos Amiar
-            //const props =[propiedades.results[390],propiedades.results[387],propiedades.results[383],propiedades.results[18],propiedades.results[17],propiedades.results[12],propiedades.results[4],propiedades.results[2]];
-            //const id = associations.results[2].toObjectId;        
-            //const task = await hub.crm.objects.tasks.basicApi.getById(id,['hs_task_status', 'hs_task_priority', 'hs_task_subject', 'hs_task_body',"hs_task_is_completed","hs_task_is_overdue",'hs_timestamp','hubspot_owner_id']);
-            //const asociaciones = await hub.crm.associations.v4.basicApi.getPage('deals',dealId,'tasks',undefined,100);
-
-            // const tareas = [];
-
-            // for (const association of asociaciones.results) {
-            // const taskId = association.toObjectId;
-
-            // const taskDetails = await hub.crm.tasks.basicApi.getById(taskId, [
-            //     'hs_task_subject',
-            //     'hs_task_body',
-            //     'hs_task_status',
-            //     'hs_task_priority',
-            //     'hs_task_assigned_to',
-            //     'hs_task_due_date',
-            //     'hs_task_create_date',
-            //     'hs_task_last_modified_date'
-            // ]);
-
-            // tareas.push({
-            //     subject: taskDetails.body.properties.hs_task_subject,
-            //     body: taskDetails.body.properties.hs_task_body,
-            //     status: taskDetails.body.properties.hs_task_status,
-            //     priority: taskDetails.body.properties.hs_task_priority,
-            //     assignedTo: taskDetails.body.properties.hs_task_assigned_to,
-            //     dueDate: taskDetails.body.properties.hs_task_due_date,
-            //     createdAt: taskDetails.body.properties.hs_task_create_date,
-            //     lastModifiedAt: taskDetails.body.properties.hs_task_last_modified_date
-            // });
-            //}
-            const cards = await hub.crm.objects.tasks.basicApi.getPage(50,undefined,['hs_body_preview','hs_task_is_completed','hs_task_is_past_due_date','hs_task_priority','hs_task_status','hs_task_subject','hs_timestamp','hs_updated_by_user_id','hubspot_owner_id'],undefined,undefined,false,undefined);
-            const cardsFilter = await hub.crm.objects.tasks.searchApi.doSearch({
+            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});   
+            const deals = await hub.crm.deals.searchApi.doSearch({
+                properties: [
+                    'dealname',
+                    'pipeline',
+                    'observaciones_para_produccion',
+                    'numero_de_remito',
+                    'description',
+                    'datos_para_envio',
+                    'cantidad_de_equipos'
+                ],
+                limit: 100,
+                after: 6320
+            })
+            const dealsId = []
+            deals.results.forEach(element => {
+                dealsId.push(element.id);
+            });
+            const valorAsociado = await hub.crm.deals.basicApi.getById(dealsId[86],['dealname'],undefined,['tasks'],undefined,undefined,undefined);
+            const taskAsociada = await hub.crm.objects.tasks.basicApi.getById(valorAsociado.associations.tasks.results[0].id);
+            const tasks = await hub.crm.objects.tasks.searchApi.doSearch({
                 filterGroups: [{
                     filters: [
-                        {
-                        propertyName: 'hs_task_status',
-                        operator: 'NEQ',
-                        value: 'COMPLETED'
-                        },
-                        {
-                        propertyName: 'hubspot_owner_id',
-                        operator: 'EQ',
-                        value: '50141006' // ID del propietario
-                        }
-                    ]
+                            {
+                                propertyName:'id',
+                                operator:'EQ',
+                                value: taskAsociada.id
+                            },
+                            {
+                                propertyName: 'hs_task_status',
+                                operator: 'NEQ',
+                                value: 'COMPLETED'
+                            },
+                            {
+                                propertyName: 'hubspot_owner_id',
+                                operator: 'EQ',
+                                value: '50141006'
+                            },
+                            {
+                                propertyName: 'hs_body_preview',
+                                operator: 'HAS_PROPERTY'
+                            }
+                        ]
                     }
                 ],
                 properties: [
-                    'hs_body_preview',
-                    'hs_created_by_user_id',
+                    'hs_all_accessible_team_ids',
                     'hs_task_completion_count',
                     'hs_task_is_completed',
                     'hs_task_is_past_due_date',
                     'hs_task_priority',
+                    'hs_timestamp',
+                    'hubspot_owner_id',
+                    'hs_engagement_source_id',
                     'hs_task_status',
                     'hs_task_subject',
-                    'hs_timestamp',
-                    'hs_updated_by_user_id',
-                    'hubspot_owner_id',
+                    'hs_body_preview',
+                    'hs_deal_id'
                 ],
                 limit: 50,
-                after: 0 // paginación si necesitás más resultados
+                after: 0 ,
+                sorts:[
+                    {
+                        propertyName:'hs_timestamp',
+                        direction: 'ASCENDING'
+                    }
+                ]
             })
-            res.status(200).json({Payload:cardsFilter})         
+            res.status(200).json({Deals:dealsId, Associations:valorAsociado,AssociatedTask:tasks})         
         }
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
@@ -140,32 +88,6 @@ export const getTasks = async (req,res) => {
     }
 }
 
-export const getContacts = async(req,res) => {
-    /**Tengo que hacer la llamada async a hubspot */
-    try {
-       if(!isAuthorized(req.session)){
-            res.redirect('/hubspot/install')
-        }else{
-            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){
-                const token = await refreshAccessToken(req.session);
-                req.session.hubspotToken = token;
-                req.session.hubspotToken.Create = Date.now();
-            }       
-            const contacts = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-            const limit = 100;
-            const after = 74273;
-            const properties = undefined;
-            const propertiesWithHistory = undefined;
-            const associations = undefined;
-            const archived = false;
-            const response = await contacts.crm.contacts.basicApi.getPage(limit,after,properties,propertiesWithHistory,associations,archived)
-            res.status(200).json({Payload:response})    
-        }
-    } catch (error) {
-        console.log('ERROR // ',error);
-        res.status(500).json({"Message":"Server connection error"})
-    }
-}
 
 export const hubspotConnection = (req,res) => {
     try {
