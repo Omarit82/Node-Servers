@@ -14,6 +14,8 @@ export const getTasks = async (req,res) => {
             }  
             const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});   
             //Con supply dealstage: 67052576
+            const payload=[];
+            const filterTask=[];
             const deals = await hub.crm.deals.searchApi.doSearch({
                 filterGroups: [{
                     filters: [
@@ -24,7 +26,7 @@ export const getTasks = async (req,res) => {
                             },
                             {
                                 propertyName:'despachado',
-                                operator: 'NOT_HAS_PROPERTY'
+                                operator: 'NOT_HAS_PROPERTY' // AUN NO FUE DESPACHADO
                             },
                         ]
                     }
@@ -43,7 +45,7 @@ export const getTasks = async (req,res) => {
                     'propuesta_comercial',
                     'hs_num_of_associated_line_items'
                 ],
-                limit: 50,
+                limit: 100,
                 after: 0,
                 sorts: [
                     {
@@ -51,24 +53,30 @@ export const getTasks = async (req,res) => {
                         direction: 'DESCENDING'
                     }
                 ]
-            })
-            const payload = [];
-            const filterTask=[]
+            });     
             for (const deal of deals.results) {
                 const tasks = await hub.crm.deals.basicApi.getById(deal.id,undefined,undefined,['tasks'],undefined,undefined,undefined);
                 for (const task of tasks.associations.tasks.results){
-                    const aux = await hub.crm.objects.tasks.basicApi.getById(task.id,['hubspot_owner_id']);
+                    const aux = await hub.crm.objects.tasks.basicApi.getById(task.id,[
+                    'hubspot_owner_id',
+                    'hs_task_is_completed',
+                    'hs_task_is_past_due_date',
+                    'hs_task_priority',
+                    'hs_timestamp',
+                    'hs_task_status',
+                    'hs_task_subject',
+                    'hs_body_preview']);
                     if (aux.properties.hubspot_owner_id === '50141006'){
-                        filterTask.push(aux);   
+                        filterTask.push(aux); 
+                        payload.push(deal);  
                     }
-                }
-                const obj ={
-                    Deal:deal,
-                    Task:filterTask
-                }            
-                payload.push(obj);
+                } 
             }
-            res.status(200).json({Payload:payload})         
+            const obj = {
+                Deals:payload,
+                Tasks:filterTask
+            }
+            res.status(200).json({Payload:obj})         
         }
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
