@@ -9,7 +9,7 @@ export const login = async(req,res) => {
             nombre: req.user.nombre,
             apellido:req.user.apellido
         }
-        res.status(200).json({Message:"User logued"});
+        res.status(200).json({Message:"User logued",Session:req.session.user});
     } catch (error) {
         res.status(500).json({Message:"Server connection error"});
     }
@@ -40,7 +40,7 @@ export const logout = async(req,res,next) => {
 
 export const register = async(req,res) => {
     try {
-        res.status(201).json({Message:"User created"})
+        res.status(201).json({Message:"User created",Payload: req.body})
     } catch (error) {
         res.status(500).json({"Message":"Server connection error",Error:error})
     }

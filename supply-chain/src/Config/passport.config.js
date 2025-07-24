@@ -10,7 +10,9 @@ export const initializedPassport = () =>{
 
     passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
         try {
-            const {nombre,apellido} = req.body;
+            console.log(req.body);
+            
+            const {nombre,apellido,avatar} = req.body;
             //chequeo de email de deitres:
             const array = username.split('@');
             const dominio = array[1];
@@ -25,7 +27,8 @@ export const initializedPassport = () =>{
                     nombre:nombre,
                     apellido:apellido,
                     email:username,
-                    password:encriptar(password)
+                    password:encriptar(password),
+                    avatar:avatar
                 };
                 const createUser = await userModel.create(newUser);
                 done(null,createUser); // No devuelvo error - genero el nuevo usuario.
