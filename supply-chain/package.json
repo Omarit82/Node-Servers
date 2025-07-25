@@ -20,8 +20,10 @@
     "express-session": "^1.18.1",
     "mongoose": "^8.16.1",
     "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "undici": "^7.12.0"
   }
 }

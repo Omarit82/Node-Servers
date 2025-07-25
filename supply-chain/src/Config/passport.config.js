@@ -51,10 +51,11 @@ export const initializedPassport = () =>{
     }))
 
     /**Google */
-    passport.use(new GoogleStrategy({clientID: process.env.CLIENT_ID, clientSecret: process.env.CLIENT_SECRET, callbackURL: "/auth/google/callback"},
+    passport.use(new GoogleStrategy({clientID:process.env.CLIENT_ID, clientSecret:process.env.CLIENT_SECRET, callbackURL: "/auth/google/callback"},
         async function(accessToken,refreshToken,profile,done){   
             try {
                 let user = await userModel.findOne({googleId:profile.id});
+                console.log(profile)
                 if(!user){
                     user = await userModel.create({
                         googleId:profile.id, 
@@ -80,6 +81,7 @@ export const initializedPassport = () =>{
         done(null,user);
     })
 }
+
 export const ensureAuthenticate = (req,res,next) => {
     if(req.isAuthenticated()){
         return next();

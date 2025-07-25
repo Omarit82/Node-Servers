@@ -22,11 +22,20 @@ app.use(express.json());
 app.use(cookieParser(process.env.SESSION_CODE));
 app.use(cors({origin:'http://localhost:5173',credentials:true}));
 app.use(session({
-    store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60*60}),
-    secret:process.env.SESSION_CODE,
-    resave:true,
-    saveUninitialized:true
-}));
+        name: 'connect.sid',
+        store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60*60}),
+        secret:process.env.SESSION_CODE,
+        resave:false,
+        saveUninitialized:false,
+        cookie: {
+            httpOnly:true,
+            secure: false, //True si HTTPS
+            sameSite:'none',
+            path:'/',
+            maxAge:60*60*1000 // 1 hora
+        }
+    })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 app.use('/uploads',express.static('uploads'));
