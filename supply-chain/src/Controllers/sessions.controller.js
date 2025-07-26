@@ -1,4 +1,4 @@
-import { ensureAuthenticate } from "../Config/passport.config.js";
+
 
 export const login = async(req,res) => {
     try {
@@ -8,7 +8,8 @@ export const login = async(req,res) => {
         req.session.user={
             email:req.user.email,
             nombre: req.user.nombre,
-            apellido:req.user.apellido
+            apellido:req.user.apellido,
+            avatar:req.user.avatar
         }
         res.status(200).json({Message:"User logued",Session:req.session.user});
     } catch (error) {
@@ -16,12 +17,10 @@ export const login = async(req,res) => {
     }
 }
 export const getUser = (req,res) => {
-    if(req.isAuthenticated()){
-        console.log("Autenticado!");
-        return res.status(200).json({user: req.user});
+    if(req.session.user){
+        res.status(200).json({User: req.session.user, Message: "Usuario autenticado"})
     }else{
-        console.log("No Autenticado!");
-        return res.status(401).json({message:"No autenticado"});
+        res.status(401).json({Message: "Usuario no autenticado"})
     }
 }
 
@@ -30,10 +29,10 @@ export const loginGoogle = async(req,res) => {
         req.session.user={
             email:req.user.email,
             nombre: req.user.nombre,
-            apellido:req.user.apellido
+            apellido:req.user.apellido,
+            avatar: req.user.avatar
         }
-        console.log("SESSION ANTES DEL REDIRECT: ",req.session);
-        res.redirect('http://localhost:5173/home');
+        res.redirect('http://localhost:5173/login');
     } catch (error) {
         res.status(500).json({Message:"Server connection error"});
     }

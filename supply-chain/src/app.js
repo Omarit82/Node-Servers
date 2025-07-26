@@ -30,7 +30,7 @@ app.use(session({
         cookie: {
             httpOnly:true,
             secure: false, //True si HTTPS
-            sameSite:'none',
+            sameSite:'lax',
             path:'/',
             maxAge:60*60*1000 // 1 hora
         }
@@ -42,7 +42,9 @@ app.use('/uploads',express.static('uploads'));
 app.use('/',indexRouter);
 
 const storage = multer.diskStorage({
-    destination: 'uploads/',
+    destination: function (req,file,cb){
+        cb(null,'uploads/');
+    },
     filename: (req, file,cb) =>{
         const ext = path.extname(file.originalname);
         const uniqueName = `${Date.now}-${Math.round(Math.random()*1e5)}${ext}}`;
@@ -50,7 +52,7 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({storage})
+const upload = multer({storage:storage})
 
 try {
     mongoose.connect(process.env.MONGO_URL).then(console.log("DB Connected"))

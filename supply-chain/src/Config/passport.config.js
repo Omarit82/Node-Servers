@@ -9,10 +9,8 @@ const localStrategy = local.Strategy;
 export const initializedPassport = () =>{
 
     passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
-        try {
-            console.log(req.body);
-            
-            const {nombre,apellido,avatar} = req.body;
+        try {           
+            const {nombre,apellido,image} = req.body;
             //chequeo de email de deitres:
             const array = username.split('@');
             const dominio = array[1];
@@ -28,8 +26,10 @@ export const initializedPassport = () =>{
                     apellido:apellido,
                     email:username,
                     password:encriptar(password),
-                    avatar:avatar
+                    avatar:image
                 };
+                console.log(newUser);
+                
                 const createUser = await userModel.create(newUser);
                 done(null,createUser); // No devuelvo error - genero el nuevo usuario.
             }        
@@ -55,14 +55,14 @@ export const initializedPassport = () =>{
         async function(accessToken,refreshToken,profile,done){   
             try {
                 let user = await userModel.findOne({googleId:profile.id});
-                console.log(profile)
                 if(!user){
                     user = await userModel.create({
                         googleId:profile.id, 
                         email:profile.emails[0].value,
                         nombre:profile.name.givenName,
                         apellido:profile.name.familyName,
-                        password:encriptar(process.env.GOOGLE_PASS)
+                        password:encriptar(process.env.GOOGLE_PASS),
+                        avatar:profile.photos[0].value
                     })
                 }
                 done(null,user);
