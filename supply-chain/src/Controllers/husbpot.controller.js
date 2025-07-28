@@ -116,7 +116,7 @@ export const handleCallback = async (req,res) => {
         }
         req.session.hubspotToken = token;    
         req.session.hubspotToken.Create = Date.now();        
-        res.redirect('/hubspot/tasks'); /**DEBIERA IR A HOME?**/
+        res.redirect('http://localhost:5173/');
     }
      catch (error) {
         console.error(error);
