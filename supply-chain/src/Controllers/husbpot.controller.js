@@ -84,6 +84,61 @@ export const getTasks = async (req,res) => {
     }
 }
 
+export const getDeals = async(req,res) => {
+    try {
+        if(!isAuthorized(req.session)){
+            res.redirect('/hubspot/install')
+        } else {
+            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){               
+                const token = await refreshAccessToken(req.session);
+                req.session.hubspotToken = token;
+                req.session.hubspotToken.Create = Date.now();
+            }  
+            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
+            const deals = await hub.crm.deals.searchApi.doSearch({
+                filterGroups: [{
+                    filters: [
+                            {
+                                propertyName: 'dealstage',
+                                operator: 'EQ',
+                                value:'67052576' // SE PASO A ENVIAR Y SE GENERÓ LA TAREA DE PROD.
+                            },
+                            {
+                                propertyName:'despachado',
+                                operator: 'NOT_HAS_PROPERTY' // AUN NO FUE DESPACHADO
+                            },
+                        ]
+                    }
+                ],
+                properties: [
+                    'dealname',
+                    'pipeline',
+                    'observaciones_para_produccion',
+                    'numero_de_remito',
+                    'datos_para_envio',
+                    'cantidad_citymesh__autocalculada_',
+                    'cantidad_de_equipos',
+                    'description',
+                    'despachado',
+                    'nro_de_guia_del_envio',
+                    'propuesta_comercial',
+                    'hs_num_of_associated_line_items'
+                ],
+                limit: 100,
+                after: 0,
+                sorts: [
+                    {
+                        propertyName:'hs_object_id',
+                        direction: 'DESCENDING'
+                    }
+                ]
+            });
+            res.status(200).json({Deals:deals});
+        }  
+    } catch (error) {
+        res.status(500).json({"Message":error.message})
+    }
+}
 
 export const hubspotConnection = (req,res) => {
     try {
