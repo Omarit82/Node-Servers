@@ -23,7 +23,7 @@ app.use(cookieParser(process.env.SESSION_CODE));
 app.use(cors({origin:'http://localhost:5173',credentials:true}));
 app.use(session({
         name: 'connect.sid',
-        store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60*60}),
+        store: MongoStore.create({mongoUrl:process.env.MONGO_URL,mongoOptions:{},ttl: 60*60*24*7/**Una semana**/}),
         secret:process.env.SESSION_CODE,
         resave:false,
         saveUninitialized:false,
@@ -32,7 +32,7 @@ app.use(session({
             secure: false, //True si HTTPS
             sameSite:'lax',
             path:'/',
-            maxAge:60*60*1000 // 1 hora
+            maxAge:60*60*1000*24*7 // 1 semana en milisegundos.
         }
     })
 );

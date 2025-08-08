@@ -32,6 +32,7 @@ export const getTasks = async (req,res) => {
                     }
                 ],
                 properties: [
+                    'line_items',
                     'dealname',
                     'pipeline',
                     'observaciones_para_produccion',
@@ -47,13 +48,8 @@ export const getTasks = async (req,res) => {
                 ],
                 limit: 100,
                 after: 0,
-                sorts: [
-                    {
-                        propertyName:'hs_object_id',
-                        direction: 'DESCENDING'
-                    }
-                ]
-            });     
+                
+            });                 
             for (const deal of deals.results) {
                 const tasks = await hub.crm.deals.basicApi.getById(deal.id,undefined,undefined,['tasks'],undefined,undefined,undefined);
                 for (const task of tasks.associations.tasks.results){
@@ -72,15 +68,47 @@ export const getTasks = async (req,res) => {
                     }
                 } 
             }
-            const obj = {
-                Deals:payload,
-                Tasks:filterTask
+            const resultado = [];
+            for(let i=0; i<payload.length; i++){
+                filterTask[i].deal = payload[i];
+                resultado.push(filterTask[i]);
             }
-            res.status(200).json({Payload:obj})         
+            resultado.sort((a,b) =>{
+                if(a.properties.hs_timestamp < b.properties.hs_timestamp) return -1;
+                if(a.properties.hs_timestamp > b.properties.hs_timestamp) return 1;
+                return 0;
+            })
+            res.status(200).json({Payload:resultado})         
         }
     } catch (error) {
         console.log('ERROR GET TASKS// ',error);
         res.status(500).json({"Message":error.message})
+    }
+}
+
+export const getTask = async(req,res) => {
+    try {
+        const id = req.params.id;
+        const tarea=[];
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const tasks = await hub.crm.deals.basicApi.getById(id,undefined,undefined,['tasks'],undefined,undefined,undefined);
+        for (const task of tasks.associations.tasks.results){
+            const aux = await hub.crm.objects.tasks.basicApi.getById(task.id,[
+            'hubspot_owner_id',
+            'hs_task_is_completed',
+            'hs_task_is_past_due_date',
+            'hs_task_priority',
+            'hs_timestamp',
+            'hs_task_status',
+            'hs_task_subject',
+            'hs_body_preview']);
+            if (aux.properties.hubspot_owner_id === '50141006'){
+                 tarea.push(aux);
+            }
+        }
+        res.status(200).json({Task:tarea})
+    } catch (error) {
+        res.status(500).json({Message:"Error de conexion al realizar getTask"})
     }
 }
 
@@ -110,6 +138,7 @@ export const getDeals = async(req,res) => {
                         ]
                     }
                 ],
+                sorts: ['-createdAt'],
                 properties: [
                     'dealname',
                     'pipeline',
@@ -126,17 +155,30 @@ export const getDeals = async(req,res) => {
                 ],
                 limit: 100,
                 after: 0,
-                sorts: [
-                    {
-                        propertyName:'hs_object_id',
-                        direction: 'DESCENDING'
-                    }
-                ]
+                
             });
             res.status(200).json({Deals:deals});
         }  
     } catch (error) {
         res.status(500).json({"Message":error.message})
+    }
+}
+
+export const analytics = async(req,res) => {
+    try {
+        const token = req.session.hubspotConnection.access_token;
+        const analyticsInfo = await fetch('http://api.hubapi.com/dashboard-repots/v1/dashboards',{
+            headers:{
+                Authorization: token,
+                'Content-Type':'application/json'
+            }
+        });
+        console.log(analyticsInfo);
+        const respuesta = await analyticsInfo.json();
+        res.status(200).json({Message:"analytics obteined",payload:respuesta})
+
+    } catch (error) {
+        res.status(500).json({Message:error.message})
     }
 }
 
@@ -154,7 +196,6 @@ export const hubspotConnection = (req,res) => {
         res.status(500).json({"Message:":"Server connection error"})
     }
 }
-
 
 export const handleCallback = async (req,res) => {
     try {
@@ -181,7 +222,6 @@ export const handleCallback = async (req,res) => {
 export const getAccessToken = async (req,res,next) => {
   // Check si existe un token en la session del user.
   if (req.session.hubspotToken) {
-    console.log('El user tiene Token');
     next()
   }
   hubspotConnection();

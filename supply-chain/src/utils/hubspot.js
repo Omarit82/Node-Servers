@@ -8,9 +8,7 @@ export const refreshAccessToken = async (session) => {
             redirect_uri: `http://localhost:${process.env.PORT}/oauth-callback`,
             refresh_token: session.hubspotToken.refresh_token
         }
-        console.log("Dentro del refreshAccessToken: // ");
         const response = await exchageForTokens(refreshTokenProof);
-        console.log("Respuesta del refresh: ",response);
         return response;
     } catch (error) {
         console.error(error);

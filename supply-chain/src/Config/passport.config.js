@@ -27,9 +27,7 @@ export const initializedPassport = () =>{
                     email:username,
                     password:encriptar(password),
                     avatar:image
-                };
-                console.log(newUser);
-                
+                };                
                 const createUser = await userModel.create(newUser);
                 done(null,createUser); // No devuelvo error - genero el nuevo usuario.
             }        
