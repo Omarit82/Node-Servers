@@ -86,6 +86,44 @@ export const getTasks = async (req,res) => {
     }
 }
 
+export const taskProperties = async(req,res) => {
+    try {
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const resultado = await hub.crm.properties.coreApi.getAll('task');
+        res.status(200).json({Payload:resultado})
+    } catch (error) {
+        res.status(500).json({Message: error.message});
+    }
+}
+export const dealProperties = async(req,res) => {
+    try {
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const resultado = await hub.crm.properties.coreApi.getAll('deal');
+        res.status(200).json({Payload:resultado})
+    } catch (error) {
+        res.status(500).json({Message: error.message});
+    }
+}
+export const getLineItemFromDeal = async(req,res) => {
+    try {
+        const dealId = req.params.id;
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const associations = await hub.crm.associations.v4.basicApi.getPage('deal',dealId,'line_item',100,undefined);
+        const lineItemsId = associations.results.map(a => a.toObjectId);
+        if(lineItemsId.length === 0){
+            res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
+        }else{
+            const batch = await hub.crm.lineItems.batchApi.read({
+                inputs:lineItemsId.map(id=>({id})),
+                properties: ['name','quantity','hs_product_id']
+            })
+            res.status(200).json({Payload:batch});
+        }
+        
+    } catch (error) {
+        res.status(500).json({Message: error.message})
+    }
+}
 export const getTask = async(req,res) => {
     try {
         const id = req.params.id;
@@ -101,7 +139,10 @@ export const getTask = async(req,res) => {
             'hs_timestamp',
             'hs_task_status',
             'hs_task_subject',
-            'hs_body_preview']);
+            'hs_body_preview',
+            'hs_task_type',
+            'hs_task_is_overdue'
+            ]);
             if (aux.properties.hubspot_owner_id === '50141006'){
                  tarea.push(aux);
             }
@@ -151,7 +192,8 @@ export const getDeals = async(req,res) => {
                     'despachado',
                     'nro_de_guia_del_envio',
                     'propuesta_comercial',
-                    'hs_num_of_associated_line_items'
+                    'hs_num_of_associated_line_items',
+                    'hs_deal_amount_calculation_preference'
                 ],
                 limit: 100,
                 after: 0,
@@ -166,16 +208,9 @@ export const getDeals = async(req,res) => {
 
 export const analytics = async(req,res) => {
     try {
-        const token = req.session.hubspotConnection.access_token;
-        const analyticsInfo = await fetch('http://api.hubapi.com/dashboard-repots/v1/dashboards',{
-            headers:{
-                Authorization: token,
-                'Content-Type':'application/json'
-            }
-        });
-        console.log(analyticsInfo);
-        const respuesta = await analyticsInfo.json();
-        res.status(200).json({Message:"analytics obteined",payload:respuesta})
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
+       
+        res.status(200).json({Message:"analytics obteined"})
 
     } catch (error) {
         res.status(500).json({Message:error.message})
@@ -184,13 +219,13 @@ export const analytics = async(req,res) => {
 
 export const hubspotConnection = (req,res) => {
     try {
-        //HUBSPOT APP CONFIG  
+        //HUBSPOT APP CONFIG  RECORDAR ACTUALIZAR LOS SCOPES!!
         const HUBSPOT_CLIENT_ID = process.env.HUBSPOT_CLIENT_ID;
         const REDIRECT_URI = `http://localhost:${process.env.PORT}/hubspot/oauth-callback`;
         const authURL = 
             'https://app.hubspot.com/oauth/authorize'+
             `?client_id=${encodeURIComponent(HUBSPOT_CLIENT_ID)}`+
-            `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=oauth%20crm.objects.contacts.read%20crm.objects.companies.read%20crm.objects.deals.read%20crm.objects.orders.read%20crm.objects.products.read%20tickets`
+            `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=oauth%20crm.objects.contacts.read%20crm.objects.companies.read%20crm.objects.deals.read%20crm.objects.orders.read%20crm.objects.products.read%20tickets%20e-commerce%20crm.schemas.line_items.read%20crm.objects.line_items.read%20business-intelligence`
         res.redirect(authURL);     
     } catch (error) {
         res.status(500).json({"Message:":"Server connection error"})
