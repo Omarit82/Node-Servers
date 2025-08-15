@@ -7,7 +7,7 @@ export const taskProperties = async(req,res) => {
         const resultado = await hub.crm.properties.coreApi.getAll('task');
         res.status(200).json({Payload:resultado})
     } catch (error) {
-        res.status(500).json({Message: error.message});
+        res.status(500).json({Message:"Error en taskProperties",Details: error.message});
     }
 }
 export const dealProperties = async(req,res) => {
@@ -16,7 +16,7 @@ export const dealProperties = async(req,res) => {
         const resultado = await hub.crm.properties.coreApi.getAll('deal');
         res.status(200).json({Payload:resultado})
     } catch (error) {
-        res.status(500).json({Message: error.message});
+        res.status(500).json({Message: "Error en dealProperties",Details:error.message});
     }
 }
 export const getLineItemFromDeal = async(req,res) => {
@@ -24,26 +24,26 @@ export const getLineItemFromDeal = async(req,res) => {
         const dealId = req.params.id;
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
         const associations = await hub.crm.associations.v4.basicApi.getPage('deal',dealId,'line_item',100,undefined);
-        const lineItemsId = associations.results.map(a => a.toObjectId);
-        if(lineItemsId.length === 0){
-            res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
+        if(associations.status == 200) {
+            const lineItemsId = associations.results.map(a => a.toObjectId);
+            if(lineItemsId.length === 0){
+                res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
+            }else{
+                const batch = await hub.crm.lineItems.batchApi.read({
+                    inputs:lineItemsId.map(id=>({id})),
+                    properties: ['name','quantity','hs_product_id']
+                })
+                res.status(200).json({Payload:batch});
+            }
         }else{
-            const batch = await hub.crm.lineItems.batchApi.read({
-                inputs:lineItemsId.map(id=>({id})),
-                properties: ['name','quantity','hs_product_id']
-            })
-            res.status(200).json({Payload:batch});
+            res.status(404).json({Message:"No pudieron obtenerse los line items del deal."})
         }
-        
     } catch (error) {
-        res.status(500).json({Message: error.message})
+        res.status(500).json({Message:"Error en getLineItem",Details: error.message})
     }
 }
 
 export const updateDeal = async (req,res) => {
-    console.log('BODY// ',req.body);
-    console.log(req.body.dealId);
-    
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
         const envioInfo = await hub.crm.deals.basicApi.update(req.body.dealId,{
@@ -53,11 +53,13 @@ export const updateDeal = async (req,res) => {
                 nro_de_guia_del_envio: req.body.guia
             }
         });
-        res.status(200).json({Message:"Deal updated"})
+        if(envioInfo.status == 200){
+            res.status(200).json({Message:"Deal updated"})
+        }else{
+            res.status(404).json({Message:"No pudo actualizarse el elemento."})
+        }
     } catch (error) {
-        console.log("Hubspot Error: ",JSON.stringify(error.response?.body || error, null,2));
-        
-        res.status(error.statusCode || 500).json({Message:error.message,Details: error.response?.body})
+        res.status(error.statusCode || 500).json({Message:"Error en updateTaks",Details: error.message})
     }
 }
 export const getTask = async(req,res) => {
@@ -118,7 +120,7 @@ export const getAllDeals = async(req,res) => {
             res.status(200).json({payload:deals})
         }  
     } catch (error) {
-        res.status(500).json({"Message":error.message})
+        res.status(500).json({Message:"Error en getAllDeals",Details:error.message})
     }
 }
 export const getDeals = async(req,res) => {
@@ -179,7 +181,7 @@ export const getDeals = async(req,res) => {
             res.status(200).json({Deals:deals});
         }  
     } catch (error) {
-        res.status(500).json({"Message":error.message})
+        res.status(500).json({Message:"Error en getDeals",Details:error.message})
     }
 }
 export const endTask = async(req,res) => {
@@ -196,10 +198,31 @@ export const endTask = async(req,res) => {
                 }
             }
         });
+        console.log(tarea);
+        
         res.status(200).json({Message:"Tarea completa", CODE:tarea.status});
     }catch(error){
-        console.log("Hubspot Error: ",JSON.stringify(error.response?.body || error, null,2));
-        res.status(error.statusCode || 500).json({Message:error.message,Details: error.response?.body})
+        res.status(error.statusCode || 500).json({Message:"Error en endTask",Details: error.message})
+    }
+}
+
+export const lowTask = async(req,res) => {
+    try {
+        const id = req.params.id;
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const tarea = await hub.apiRequest({
+            method:"PATCH",
+            path:`/engagements/v1/engagements/${id}`,
+            body: {
+                engagement: {id:id},
+                metadata:{
+                    priority:"LOW"
+                }
+            }
+        });
+        res.status(200).json({Message:"Listo a cerrarse", CODE:tarea.status});
+    }catch(error){
+        res.status(error.statusCode || 500).json({Message:"Error en lowTask",Details: error.message})
     }
 }
 
