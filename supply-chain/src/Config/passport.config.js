@@ -8,46 +8,6 @@ const localStrategy = local.Strategy;
 
 export const initializedPassport = () =>{
 
-    passport.use('register',new localStrategy({passReqToCallback:true,usernameField:'email'},async(req,username,password,done)=>{
-        try {           
-            const {nombre,apellido,image} = req.body;
-            //chequeo de email de deitres:
-            const array = username.split('@');
-            const dominio = array[1];
-            if(dominio !== 'deitres.com'){
-                return done('El email ingresado no corresponde a la organizacion',false)
-            }
-            const emailCheck = await userModel.findOne({email:username});           
-            if(emailCheck){
-                return done(null,false,{Message:" Email ya registrado"});//No devuelvo error - no genero un nuevo usuario.
-            }else{
-                const newUser = {
-                    nombre:nombre,
-                    apellido:apellido,
-                    email:username,
-                    password:encriptar(password),
-                    avatar:image
-                };                
-                const createUser = await userModel.create(newUser);
-                done(null,createUser); // No devuelvo error - genero el nuevo usuario.
-            }        
-        } catch (error) {
-            done(error);
-        }
-    }))
-
-    passport.use('login', new localStrategy({usernameField:'email'}, async(username,password,done)=>{
-        try {
-            const user = await userModel.findOne({email:username})
-            if(user && checkPassword(password,user.password)){
-                return done(null,user)
-            }
-            return done(null,false)
-        } catch (error) {
-            return done(error)
-        }
-    }))
-
     /**Google */
     passport.use(new GoogleStrategy({clientID:process.env.CLIENT_ID, clientSecret:process.env.CLIENT_SECRET, callbackURL: "/auth/google/callback"},
         async function(accessToken,refreshToken,profile,done){   

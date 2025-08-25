@@ -4,8 +4,6 @@ import passport from 'passport';
 
 const sessionsRouter = Router();
 
-sessionsRouter.post('/login',passport.authenticate('login'),login);
-sessionsRouter.post('/register',passport.authenticate('register'),register);
 sessionsRouter.post('/logout',logout);
 sessionsRouter.get('/api/user',getUser);
 sessionsRouter.get('/api/session',getSession);

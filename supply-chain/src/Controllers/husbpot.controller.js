@@ -1,5 +1,6 @@
 import hubspot from "@hubspot/api-client";
-import { exchageForTokens, isAuthorized, refreshAccessToken } from "../utils/hubspot.js";
+import { exchageForTokens, isAuthorized, refreshAccessToken, safeHubspotCall } from "../utils/hubspot.js";
+import pLimit from "p-limit";
 
 export const taskProperties = async(req,res) => {
     try {
@@ -19,24 +20,52 @@ export const dealProperties = async(req,res) => {
         res.status(500).json({Message: "Error en dealProperties",Details:error.message});
     }
 }
+export const companiesProperties = async(req,res) => {
+    try {
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const resultado = await hub.crm.properties.coreApi.getAll('companies');
+        res.status(200).json({Payload:resultado})
+    } catch (error) {
+        res.status(500).json({Message: "Error en companiesProperties",Details:error.message});
+    }
+}
+
+export const listadoProductos = async(req,res) => {
+    try {
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const resultado = await hub.crm.products.basicApi.getPage(100,undefined,['name','info_uno_id','description']);
+        console.log(resultado);
+        
+        res.status(200).json({Payload:resultado.results});
+    } catch (error) {
+        res.status(500).json({Message:"Error al obtener el listado de productos.",Details:error.message});
+    }
+}
+/************************************************************************************************************** */
+export const getClient = async(req,res) => {
+    try {
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const id = req.params.id;
+        const resultado = await safeHubspotCall(()=> hub.crm.companies.basicApi.getById(id,['razon_social','phone','numero_cliente_infouno','cuit___tax_id','condicion_frente_al_iva','city','zip','address']));
+        res.status(200).json({Payload:resultado});
+    } catch (error) {
+        res.status(500).json({Message: "Error en getClients",Details:error.message});
+    }
+}
 export const getLineItemFromDeal = async(req,res) => {
     try {
         const dealId = req.params.id;
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const associations = await hub.crm.associations.v4.basicApi.getPage('deal',dealId,'line_item',100,undefined);
-        if(associations.status == 200) {
-            const lineItemsId = associations.results.map(a => a.toObjectId);
-            if(lineItemsId.length === 0){
-                res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
-            }else{
-                const batch = await hub.crm.lineItems.batchApi.read({
-                    inputs:lineItemsId.map(id=>({id})),
-                    properties: ['name','quantity','hs_product_id']
-                })
-                res.status(200).json({Payload:batch});
-            }
+        const associations = await safeHubspotCall(() =>  hub.crm.associations.v4.basicApi.getPage('deal',dealId,'line_item',100,undefined));
+        const lineItemsId = associations.results.map(a => a.toObjectId);
+        if(lineItemsId.length === 0){
+            res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
         }else{
-            res.status(404).json({Message:"No pudieron obtenerse los line items del deal."})
+            const batch = await safeHubspotCall(()=>hub.crm.lineItems.batchApi.read({
+                inputs:lineItemsId.map(id=>({id})),
+                properties: ['name','quantity','hs_product_id']
+            }));
+            res.status(200).json({Payload:batch});
         }
     } catch (error) {
         res.status(500).json({Message:"Error en getLineItem",Details: error.message})
@@ -46,18 +75,14 @@ export const getLineItemFromDeal = async(req,res) => {
 export const updateDeal = async (req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const envioInfo = await hub.crm.deals.basicApi.update(req.body.dealId,{
+        const envioInfo = await safeHubspotCall(()=> hub.crm.deals.basicApi.update(req.body.dealId,{
             properties:{
                 observaciones_para_produccion: req.body.observaciones,
                 numero_de_remito: req.body.remito,
                 nro_de_guia_del_envio: req.body.guia
             }
-        });
-        if(envioInfo.status == 200){
-            res.status(200).json({Message:"Deal updated"})
-        }else{
-            res.status(404).json({Message:"No pudo actualizarse el elemento."})
-        }
+        }));
+        res.status(200).json({Message:"Deal updated"})
     } catch (error) {
         res.status(error.statusCode || 500).json({Message:"Error en updateTaks",Details: error.message})
     }
@@ -65,64 +90,34 @@ export const updateDeal = async (req,res) => {
 export const getTask = async(req,res) => {
     try {
         const id = req.params.id;
-        const tarea=[];
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const tasks = await hub.crm.deals.basicApi.getById(id,undefined,undefined,['tasks'],undefined,undefined,undefined);
-        for (const task of tasks.associations.tasks.results){
-            const aux = await hub.crm.objects.tasks.basicApi.getById(task.id,[
-            'hubspot_owner_id',
-            'hs_task_is_completed',
-            'hs_task_is_past_due_date',
-            'hs_task_priority',
-            'hs_timestamp',
-            'hs_task_status',
-            'hs_task_subject',
-            'hs_body_preview',
-            'hs_task_type',
-            'hs_task_is_overdue'
-            ]);
-            if (aux.properties.hubspot_owner_id === '50141006'){
-                 tarea.push(aux);
-            }
-        }
-        res.status(200).json({Task:tarea})
+        const tasks = await safeHubspotCall(()=> hub.crm.deals.basicApi.getById(id,undefined,undefined,['tasks'],undefined,undefined,undefined));
+        const limit = pLimit(5);
+        const tarea = await Promise.all(
+            tasks.associations.tasks.results.map(task =>
+                limit(()=>
+                    safeHubspotCall(()=> hub.crm.objects.tasks.basicApi.getById(task.id,[
+                        'hubspot_owner_id',
+                        'hs_task_is_completed',
+                        'hs_task_is_past_due_date',
+                        'hs_task_priority',
+                        'hs_timestamp',
+                        'hs_task_status',
+                        'hs_task_subject',
+                        'hs_body_preview',
+                        'hs_task_type',
+                        'hs_task_is_overdue'
+                    ]))
+                )
+            )
+        )
+        const filtradas =tarea.filter( aux => aux?.properties?.hubspot_owner_id === '50141006');
+        res.status(200).json({Task:filtradas})
     } catch (error) {
         res.status(500).json({Message:"Error de conexion al realizar getTask"})
     }
 }
-export const getAllDeals = async(req,res) => {
-    try {
-        if(!isAuthorized(req.session)){
-            res.redirect('/hubspot/install')
-        } else {
-            if(parseInt(Date.now()/1000)>(parseInt(req.session.hubspotToken.Create/1000)+req.session.hubspotToken.expires_in)){               
-                const token = await refreshAccessToken(req.session);
-                req.session.hubspotToken = token;
-                req.session.hubspotToken.Create = Date.now();
-            }  
-            const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
-            const deals = await hub.crm.deals.basicApi.getById(41514195259,[
-                    'dealstage',
-                    'dealname',
-                    'pipeline',
-                    'observaciones_para_produccion',
-                    'numero_de_remito',
-                    'datos_para_envio',
-                    'cantidad_citymesh__autocalculada_',
-                    'cantidad_de_equipos',
-                    'description',
-                    'despachado',
-                    'nro_de_guia_del_envio',
-                    'propuesta_comercial',
-                    'hs_num_of_associated_line_items',
-                    'hs_deal_amount_calculation_preference']
-            );
-            res.status(200).json({payload:deals})
-        }  
-    } catch (error) {
-        res.status(500).json({Message:"Error en getAllDeals",Details:error.message})
-    }
-}
+
 export const getDeals = async(req,res) => {
     try {
         if(!isAuthorized(req.session)){
@@ -143,7 +138,7 @@ export const getDeals = async(req,res) => {
                 prop ="NOT_HAS_PROPERTY"
             }
             const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
-            const deals = await hub.crm.deals.searchApi.doSearch({
+            const deals = await safeHubspotCall(()=> hub.crm.deals.searchApi.doSearch({
                 filterGroups: [{
                     filters: [
                             {
@@ -172,66 +167,31 @@ export const getDeals = async(req,res) => {
                     'nro_de_guia_del_envio',
                     'propuesta_comercial',
                     'hs_num_of_associated_line_items',
-                    'hs_deal_amount_calculation_preference'
+                    'hs_deal_amount_calculation_preference',
+                    'hs_primary_associated_company'
                 ],
-                limit: 20,
+                limit: 100,
                 after: 0,
                 
-            });
+            }));
             res.status(200).json({Deals:deals});
         }  
     } catch (error) {
         res.status(500).json({Message:"Error en getDeals",Details:error.message})
     }
 }
-export const endTask = async(req,res) => {
-    try {
-        const id = req.params.id;
-        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const tarea = await hub.apiRequest({
-            method:"PATCH",
-            path:`/engagements/v1/engagements/${id}`,
-            body: {
-                engagement: {id:id},
-                metadata:{
-                    status: "COMPLETED"
-                }
-            }
-        });
-        console.log(tarea);
-        
-        res.status(200).json({Message:"Tarea completa", CODE:tarea.status});
-    }catch(error){
-        res.status(error.statusCode || 500).json({Message:"Error en endTask",Details: error.message})
-    }
-}
 
-export const lowTask = async(req,res) => {
-    try {
-        const id = req.params.id;
-        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
-        const tarea = await hub.apiRequest({
-            method:"PATCH",
-            path:`/engagements/v1/engagements/${id}`,
-            body: {
-                engagement: {id:id},
-                metadata:{
-                    priority:"LOW"
-                }
-            }
-        });
-        res.status(200).json({Message:"Listo a cerrarse", CODE:tarea.status});
-    }catch(error){
-        res.status(error.statusCode || 500).json({Message:"Error en lowTask",Details: error.message})
-    }
-}
 
 export const analytics = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token}); 
-       
-        res.status(200).json({Message:"analytics obteined"})
-
+        const report = await hub.apiRequest({
+            method:"GET",
+            path:"/analytics/v2/reports/totals/total?start=20220101&end=20250818"
+        });
+        console.log(report);
+        
+        res.status(200).json({Message:"analytics obtained", Payload:report})
     } catch (error) {
         res.status(500).json({Message:error.message})
     }

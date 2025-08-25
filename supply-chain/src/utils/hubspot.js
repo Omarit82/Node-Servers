@@ -49,3 +49,18 @@ export const exchageForTokens = async (code) =>{
 export const isAuthorized = (session) => {
     return session.hubspotToken ? true : false;
 };
+
+
+/***Llamada con reintentos a Hubspot! */
+export const safeHubspotCall = async(fn, retries=3, delay=1000)=>{
+    try {
+        return await fn();
+    } catch (error) {
+        if(error.code === 429 && retries>0){
+            //console.warn("Rate limit, esperando...",delay,"ms");
+            await new Promise (r => setTimeout(r,delay));
+            return safeHubspotCall(fn, retries-1,delay*2);
+        }
+        throw error
+    }
+}

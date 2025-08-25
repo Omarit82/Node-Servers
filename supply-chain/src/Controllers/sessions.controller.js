@@ -5,6 +5,12 @@ export const login = async(req,res) => {
         if(!req.user){
             return res.status(401).json({Message:"User or password invalid"});
         }
+        //chequeo de email de deitres:
+        const array = username.split('@');
+        const dominio = array[1];
+        if(dominio !== 'deitres.com'){
+            return res.status(400).json({Message:"Bad Request - Email no habilitado."})//done('El email ingresado no corresponde a la organizacion',false)
+        }
         req.session.user={
             email:req.user.email,
             nombre: req.user.nombre,
