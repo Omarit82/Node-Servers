@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { hubspotConnection,handleCallback, getDeals,updateDeal,getTask,taskProperties, getLineItemFromDeal, dealProperties, analytics, getClient, companiesProperties, listadoProductos} from "../Controllers/husbpot.controller.js";
+import { hubspotConnection,handleCallback, getDeals,updateDeal,getTask,taskProperties, getLineItemFromDeal, dealProperties, analytics, getClient, companiesProperties, listadoProductos, updateTask} from "../Controllers/husbpot.controller.js";
 import { ensureAuthenticate } from "../Config/passport.config.js";
 
 
@@ -15,6 +15,7 @@ hubspotRouter.get('/lineItem/:id',getLineItemFromDeal);
 hubspotRouter.get('/analytics',analytics);
 
 hubspotRouter.put('/deals',ensureAuthenticate,updateDeal)
+hubspotRouter.put('/task/:id',ensureAuthenticate,updateTask)
 
 /**DEBUG ROUTES**/
 hubspotRouter.get('/tasksProperties',taskProperties);

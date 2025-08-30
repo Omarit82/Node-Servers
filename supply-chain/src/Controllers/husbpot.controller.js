@@ -34,8 +34,6 @@ export const listadoProductos = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
         const resultado = await hub.crm.products.basicApi.getPage(100,undefined,['name','info_uno_id','description']);
-        console.log(resultado);
-        
         res.status(200).json({Payload:resultado.results});
     } catch (error) {
         res.status(500).json({Message:"Error al obtener el listado de productos.",Details:error.message});
@@ -61,14 +59,35 @@ export const getLineItemFromDeal = async(req,res) => {
         if(lineItemsId.length === 0){
             res.status(200).json({Message:"No se encontraron line items.",Payload:[]});
         }else{
-            const batch = await safeHubspotCall(()=>hub.crm.lineItems.batchApi.read({
-                inputs:lineItemsId.map(id=>({id})),
-                properties: ['name','quantity','hs_product_id']
-            }));
+            const batch = await safeHubspotCall(() => hub.crm.lineItems.batchApi.read({
+                inputs: lineItemsId.map(id => ({ id })),
+                properties: ['name', 'quantity', 'hs_product_id']
+            })
+            );
             res.status(200).json({Payload:batch});
         }
     } catch (error) {
         res.status(500).json({Message:"Error en getLineItem",Details: error.message})
+    }
+}
+export const updateTask = async(req,res) => {
+    try {
+        const id = req.params.id;
+        const priority = req.body.priority;
+        const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
+        const tarea = await hub.apiRequest({
+            method:"PATCH",
+            path:`/engagements/v1/engagements/${id}`,
+            body: {
+                engagement: {id:id},
+                metadata:{
+                    priority:`${priority}`
+                }
+            }
+        });
+        res.status(200).json({Message:"Listo a cerrarse", CODE:tarea.status});
+    }catch(error){
+        res.status(error.statusCode || 500).json({Message:"Error en lowTask",Details: error.message})
     }
 }
 

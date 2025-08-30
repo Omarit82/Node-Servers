@@ -13,4 +13,4 @@ const productSchema = new Schema({
     }
 })
 
-export default productModel = new model("Product",productSchema)
+export default productModel = model("Product",productSchema)

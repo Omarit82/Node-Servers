@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { makeRemito } from "../Controllers/remitos.controller.js";
+import {saveRemito,getRemitos } from "../Controllers/remitos.controller.js";
 
 
 const remitoRouter = Router();
 
-remitoRouter.post('/pdf',makeRemito);
+remitoRouter.post('/save',saveRemito);
+remitoRouter.get('/',getRemitos);
 
 export default remitoRouter;

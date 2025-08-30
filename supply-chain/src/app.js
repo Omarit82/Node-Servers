@@ -38,6 +38,7 @@ app.use(session({
 );
 app.use(passport.initialize());
 app.use(passport.session());
+app.use('/static', express.static('./tmp'));
 app.use('/uploads',express.static('uploads'));
 app.use('/',indexRouter);
 
