@@ -44,7 +44,7 @@ export const getClient = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
         const id = req.params.id;
-        const resultado = await safeHubspotCall(()=> hub.crm.companies.basicApi.getById(id,['razon_social','phone','numero_cliente_infouno','cuit___tax_id','condicion_frente_al_iva','city','zip','address']));
+        const resultado = await safeHubspotCall(()=> hub.crm.companies.basicApi.getById(id,['state','razon_social','phone','numero_cliente_infouno','cuit___tax_id','condicion_frente_al_iva','city','zip','address']));
         res.status(200).json({Payload:resultado});
     } catch (error) {
         res.status(500).json({Message: "Error en getClients",Details:error.message});
