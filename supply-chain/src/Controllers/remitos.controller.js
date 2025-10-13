@@ -3,15 +3,13 @@ import PDFDocument from "pdfkit";
 
 export const saveRemito= async(req, res) => {
   try {
-    const { clientData, items } = req.body;
+    const { clientData, remitar } = req.body;
     const nuevoRemito = new Remito({
       clientData,
-      items
+      remitar
       // "numero" se genera solo gracias al middleware pre("save")
       // "fecha" se asigna automáticamente
     });
-    console.log(items);
-    
     const rem = await nuevoRemito.save();
     const valor = 10000; 
     const now = new Date(Date.now());
@@ -56,10 +54,14 @@ export const saveRemito= async(req, res) => {
     remito.fontSize(8).text("Cantidad",200,187)
     remito.fontSize(8).text("Descripcion",350,187)
     remito.moveTo(50,200).lineTo(550,200).lineWidth(2).stroke();
-    for (let index = 0; index < items.length; index++) {
-        remito.fontSize(8).text(items[index].info_uno_id,50,(205+index*10))
-        remito.fontSize(8).text(items[index].quantity,200,(205+index*10))
-        remito.fontSize(8).text(items[index].properties.name,350,(205+index*10))
+    for (let index = 0; index < remitar.length; index++) {
+      if(remitar[index].producto.visible != false){
+        console.log(remitar[index]);
+        
+        remito.fontSize(8).text(remitar[index].producto.properties.info_uno_id,50,(205+index*10))
+        remito.fontSize(8).text(remitar[index].cantidad,200,(205+index*10))
+        remito.fontSize(8).text(remitar[index].producto.properties.name,350,(205+index*10))
+      }
     }
     remito.text(`Valor declarado: $${valor}`,50,650);
     remito.text("..............................",380,650,{align:"center"});
@@ -70,7 +72,17 @@ export const saveRemito= async(req, res) => {
     res.status(500).json({ error: "No se pudo crear el remito" });
   }
 }
-
+export const exportarRemito = async(req,res) =>{
+    try {
+        const id = req.params.id;
+        console.log(id);
+        console.log(req.body);
+        const resp = await Remito.findByIdAndUpdate(id,{exported:req.body.exported});
+        res.status(200).json({Message:"Remito exportado",Payload:resp});
+    } catch (error) {
+        res.status(500).json({Message:"Error al actualizar remito"})
+    }
+}
 export const getRemitos = async(req,res) => {
     try {
         const respuesta = await Remito.find();
