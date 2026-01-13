@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { login, logout, register,loginGoogle,getUser, getSession } from '../Controllers/sessions.controller.js';
+import { logout,loginGoogle,getUser, getSession } from '../Controllers/sessions.controller.js';
 import passport from 'passport';
 
 const sessionsRouter = Router();

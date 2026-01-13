@@ -6,11 +6,7 @@ import pLimit from "p-limit";
 * CONTROLADOR DE HUBSPOT 
 */
 
-/**
- * Metodo que trae como Payload todas las propiedades de las tareas //A ELIMINAR
- * @param {*} req 
- * @param {*} res 
- */
+
 export const taskProperties = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
@@ -20,11 +16,7 @@ export const taskProperties = async(req,res) => {
         res.status(500).json({Message:"Error en taskProperties",Details: error.message});
     }
 }
-/**
- * Metodo que trae como Payload todas las propiedades del deal //A ELIMINAR
- * @param {*} req 
- * @param {*} res 
- */
+
 export const dealProperties = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
@@ -35,11 +27,6 @@ export const dealProperties = async(req,res) => {
     }
 }
 
-/**
- * Metodo que trae como Payload todas las propiedades de las companias // A ELiMINAR 
- * @param {*} req 
- * @param {*} res 
- */
 export const companiesProperties = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});
@@ -51,11 +38,6 @@ export const companiesProperties = async(req,res) => {
 }
 /************************************************************************************/
 
-/**
- * Metodo que retorna el listado de productos
- * @param {*} req 
- * @param {*} res 
- */
 export const listadoProductos = async(req,res) => {
     try {
         const hub = new hubspot.Client({"accessToken":req.session.hubspotToken.access_token});

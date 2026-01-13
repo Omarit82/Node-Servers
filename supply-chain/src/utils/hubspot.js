@@ -15,33 +15,27 @@ export const refreshAccessToken = async (session) => {
     }
 }
 
-export const exchageForTokens = async (code) =>{
+export const exchageForTokens = async (exchangeProof) =>{
     try {
-        const formData = new URLSearchParams();
-        for (const key in code) {
-            formData.append(key, code[key])
-        }
-        const responseBody = await fetch('https://api.hubapi.com/oauth/v1/token',{
+        const formData = new URLSearchParams(exchangeProof);
+
+        const response = await fetch('https://api.hubapi.com/oauth/v1/token',{
             method:"POST",
             headers:{
                 'Content-Type':'application/x-www-form-urlencoded'
             },
             body:formData
         })
-        const response = await responseBody.text();
-        let parsedBody;
-        try {
-            parsedBody = JSON.parse(response);
-        } catch (error) {
-            parsedBody = response;
+        const data = await response.json();
+      
+        if(!response.ok){
+            throw new Error(data.message || `HTTP Error! status:${response.status} // ${response.statusText}`);
         }
-        if(!responseBody.ok){
-            throw new Error(`HTTP Error! status:${response.status} // ${response.statusText}`);
-        }
-        const tokens = await parsedBody;
-        return tokens;
+        
+        return data;
     } catch (error) {
-        return (error);
+        console.error("Error en el exchangeForTokens: ",error.message);
+        throw (error);
     }
 }
 
@@ -52,14 +46,26 @@ export const isAuthorized = (session) => {
 
 
 /***Llamada con reintentos a Hubspot! */
-export const safeHubspotCall = async(fn, retries=3, delay=1000)=>{
+export const safeHubspotCall = async(fn,session, retries=3, delay=1000)=>{
     try {
         return await fn();
     } catch (error) {
+        /**Token expirado 401 */
+        if(error.status === 401 && session.hubspotToken?.refresh_token){
+            console.log("Token Expirado, intentando refresco...");
+            const newTokens = await refreshAccessToken(session);
+            session.hubspotToken = {
+                ...session.hubspotToken,
+                ...newTokens,
+                updatedAt: Date.now()
+            };
+            return await fn();
+        }
+        /**Rate limit 429 */
         if(error.code === 429 && retries>0){
-            //console.warn("Rate limit, esperando...",delay,"ms");
+            console.warn("Rate limit, esperando...",delay,"ms");
             await new Promise (r => setTimeout(r,delay));
-            return safeHubspotCall(fn, retries-1,delay*2);
+            return safeHubspotCall(fn,session ,retries-1,delay*2);
         }
         throw error
     }

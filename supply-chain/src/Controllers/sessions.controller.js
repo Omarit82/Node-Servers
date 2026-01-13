@@ -1,27 +1,4 @@
 
-
-export const login = async(req,res) => {
-    try {
-        if(!req.user){
-            return res.status(401).json({Message:"User or password invalid"});
-        }
-        //chequeo de email de deitres:
-        const array = username.split('@');
-        const dominio = array[1];
-        if(dominio !== 'deitres.com'){
-            return res.status(400).json({Message:"Bad Request - Email no habilitado."})//done('El email ingresado no corresponde a la organizacion',false)
-        }
-        req.session.user={
-            email:req.user.email,
-            nombre: req.user.nombre,
-            apellido:req.user.apellido,
-            avatar:req.user.avatar
-        }
-        res.status(200).json({Message:"User logued",Session:req.session.user});
-    } catch (error) {
-        res.status(500).json({Message:"Server connection error"});
-    }
-}
 export const getUser = (req,res) => {
     if(req.session.user){
         res.status(200).json({User: req.session.user, Message: "Usuario autenticado"})
@@ -43,7 +20,8 @@ export const loginGoogle = async(req,res) => {
             email:req.user.email,
             nombre: req.user.nombre,
             apellido:req.user.apellido,
-            avatar: req.user.avatar
+            avatar: req.user.avatar,
+            rol: req.user.user
         }
         res.redirect('http://localhost:5173/login');
     } catch (error) {
