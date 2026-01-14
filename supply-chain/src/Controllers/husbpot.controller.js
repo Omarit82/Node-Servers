@@ -334,16 +334,21 @@ export const handleCallback = async (req,res) => {
             'redirect_uri': `http://localhost:${process.env.PORT}/hubspot/oauth-callback`,
             'code': req.query.code
         }
-        const token = await exchageForTokens(authCodeProof);            
-        if(token.message){
-            return res.redirect(`/error?msg=${token.message}`);
-        }
-        req.session.hubspotToken = token;    
-        req.session.hubspotToken.Create = Date.now();        
-        res.redirect('http://localhost:5173/');
+        const token = await exchageForTokens(authCodeProof);     
+        
+        req.session.hubspotToken ={
+            ...token,
+            Create: Date.now()
+        };
+        req.session.save(() => {
+            res.redirect('http://localhost:5173/');
+        });
+
+      
     }
      catch (error) {
-        console.error(error);
+        console.error("Callback Error: ",error);
+        res.redirect(`/error?msg=auth_failed`);
     }
 }
 

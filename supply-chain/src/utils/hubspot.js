@@ -41,7 +41,7 @@ export const exchageForTokens = async (exchangeProof) =>{
 
 
 export const isAuthorized = (session) => {
-    return session.hubspotToken ? true : false;
+    return !!(session?.hubspotToken?.access_token);
 };
 
 

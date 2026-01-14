@@ -1,22 +1,25 @@
 import { Router } from "express";
 import { hubspotConnection,handleCallback,despachosReales, getDeals,updateDeal,getTask,taskProperties, getLineItemFromDeal, dealProperties, getClient, companiesProperties, listadoProductos, updateTask, dealsAnalitics} from "../Controllers/husbpot.controller.js";
 import { ensureAuthenticate } from "../Config/passport.config.js";
+import { ensureHubspotToken } from "../Middlewares/hubspotAuth.js"; 
 
 
 const hubspotRouter = Router();
 
 hubspotRouter.get('/install',ensureAuthenticate,hubspotConnection);
-hubspotRouter.get('/oauth-callback',ensureAuthenticate,handleCallback);
+hubspotRouter.get('/oauth-callback',handleCallback);
 
-hubspotRouter.get('/dealsAnalitics',ensureAuthenticate,dealsAnalitics);
-hubspotRouter.get('/despachosReales',ensureAuthenticate, despachosReales)
-hubspotRouter.get('/deals/:stage/:completed',ensureAuthenticate,getDeals);
-hubspotRouter.get('/task/:id',ensureAuthenticate,getTask);
+hubspotRouter.use(ensureAuthenticate);
+hubspotRouter.use(ensureHubspotToken);
+
+hubspotRouter.get('/dealsAnalitics',dealsAnalitics);
+hubspotRouter.get('/despachosReales', despachosReales)
+hubspotRouter.get('/deals/:stage/:completed',getDeals);
+hubspotRouter.get('/task/:id',getTask);
 hubspotRouter.get('/clients/:id',getClient);
 hubspotRouter.get('/lineItem/:id',getLineItemFromDeal);
-
-hubspotRouter.put('/deals',ensureAuthenticate,updateDeal)
-hubspotRouter.put('/task/:id',ensureAuthenticate,updateTask)
+hubspotRouter.put('/deals',updateDeal)
+hubspotRouter.put('/task/:id',updateTask)
 
 
 /**DEBUG ROUTES**/
